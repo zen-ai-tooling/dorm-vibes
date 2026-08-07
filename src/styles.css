@@ -142,3 +142,141 @@
     color: var(--color-foreground);
   }
 }
+
+/* --- Dorm Hallway UI (warm, cozy, low-poly companion styling) --- */
+:root {
+  --dorm-paper: oklch(0.96 0.03 85);
+  --dorm-ink: oklch(0.32 0.04 60);
+  --dorm-ink-soft: oklch(0.52 0.03 60);
+}
+
+.dorm-title {
+  font-family: ui-rounded, "Trebuchet MS", system-ui, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--dorm-ink);
+  text-shadow: 0 2px 0 oklch(1 0 0 / 55%);
+}
+
+.dorm-sub {
+  font-family: ui-rounded, "Trebuchet MS", system-ui, sans-serif;
+  font-size: 0.85rem;
+  color: var(--dorm-ink-soft);
+  text-shadow: 0 1px 0 oklch(1 0 0 / 45%);
+}
+
+.dorm-plaque {
+  font-family: ui-rounded, "Trebuchet MS", system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 2px solid;
+  background: var(--dorm-paper);
+  color: var(--dorm-ink);
+  box-shadow: 0 2px 0 oklch(0.4 0.05 60 / 25%);
+}
+
+.dorm-overlay {
+  position: absolute;
+  right: 2rem;
+  bottom: 2rem;
+  width: min(24rem, 40vw);
+  animation: dorm-pop 220ms cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+@keyframes dorm-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dorm-panel {
+  font-family: ui-rounded, "Trebuchet MS", system-ui, sans-serif;
+  background: var(--dorm-paper);
+  color: var(--dorm-ink);
+  border: 3px solid;
+  border-radius: 1rem;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 10px 0 oklch(0.4 0.05 60 / 18%);
+}
+
+.dorm-panel-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.6rem;
+}
+
+.dorm-songs {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.dorm-songs li {
+  display: grid;
+  grid-template-columns: 1.35rem 1fr auto;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.dorm-rank {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 0.4rem;
+  color: var(--dorm-paper);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.dorm-song {
+  font-weight: 700;
+}
+
+.dorm-artist {
+  color: var(--dorm-ink-soft);
+  font-size: 0.75rem;
+}
+
+.dorm-bulletin {
+  display: grid;
+  gap: 0.65rem;
+  font-size: 0.85rem;
+}
+
+.dorm-bulletin li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.dorm-flyer {
+  width: 3.25rem;
+  height: 4rem;
+  object-fit: cover;
+  border-radius: 0.4rem;
+  border: 2px solid oklch(0.85 0.03 80);
+  transform: rotate(-3deg);
+}
+
+.dorm-tag {
+  display: inline-block;
+  margin-right: 0.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.35rem;
+  font-style: normal;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--dorm-paper);
+}
