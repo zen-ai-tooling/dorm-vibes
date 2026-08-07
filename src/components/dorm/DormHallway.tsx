@@ -495,7 +495,6 @@ function World({
     }
 
 
-    if (typeof window !== 'undefined') (window as any).__p = [player.current.x, player.current.y];
     if (group.current) {
       group.current.position.set(player.current.x, 0, player.current.y);
       const targetRot = Math.atan2(facing.current.x, facing.current.y);
