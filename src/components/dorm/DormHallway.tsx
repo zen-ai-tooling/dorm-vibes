@@ -1,0 +1,673 @@
+import { useRef, useState, useMemo, useEffect, type ReactNode } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
+import * as THREE from "three";
+import {
+  ROOMS,
+  COLORS,
+  HALL_W,
+  HALL_H,
+  WALL_T,
+  DOOR_W,
+  DOOR_H,
+  HALL_START,
+  HALL_END,
+  ROOM_SIZE,
+  sideSign,
+  roomCenterX,
+  type Room,
+} from "@/lib/dorm-data";
+
+type Box = { cx: number; cz: number; sx: number; sz: number };
+
+const HALF = HALL_W / 2;
+const WALL_CX = HALF + WALL_T / 2;
+const PLAYER_R = 0.42;
+
+/** Split a wall run along z into segments, skipping doorway gaps. */
+function splitRun(from: number, to: number, gaps: [number, number][]): [number, number][] {
+  const out: [number, number][] = [];
+  let cursor = from;
+  for (const [a, b] of [...gaps].sort((p, q) => p[0] - q[0])) {
+    if (a > cursor) out.push([cursor, a]);
+    cursor = Math.max(cursor, b);
+  }
+  if (cursor < to) out.push([cursor, to]);
+  return out;
+}
+
+function buildWalls(): Box[] {
+  const walls: Box[] = [];
+  for (const side of ["left", "right"] as const) {
+    const sign = sideSign(side);
+    const gaps = ROOMS.filter((r) => r.side === side).map(
+      (r) => [r.z - DOOR_W / 2, r.z + DOOR_W / 2] as [number, number],
+    );
+    for (const [a, b] of splitRun(HALL_START, HALL_END, gaps)) {
+      walls.push({ cx: sign * WALL_CX, cz: (a + b) / 2, sx: WALL_T, sz: b - a });
+    }
+  }
+  // hallway back wall
+  walls.push({
+    cx: 0,
+    cz: HALL_START - WALL_T / 2,
+    sx: HALL_W + WALL_T * 2,
+    sz: WALL_T,
+  });
+
+  // room shells
+  for (const room of ROOMS) {
+    const sign = sideSign(room.side);
+    const outerX = sign * (HALF + WALL_T + ROOM_SIZE + WALL_T / 2);
+    walls.push({ cx: outerX, cz: room.z, sx: WALL_T, sz: ROOM_SIZE + WALL_T * 2 });
+    const cx = roomCenterX(room.side);
+    for (const dz of [-1, 1]) {
+      walls.push({
+        cx,
+        cz: room.z + dz * (ROOM_SIZE / 2 + WALL_T / 2),
+        sx: ROOM_SIZE,
+        sz: WALL_T,
+      });
+    }
+  }
+  return walls;
+}
+
+const WALLS = buildWalls();
+
+type Interactive = {
+  key: string;
+  room: Room;
+  kind: "speaker" | "board";
+  x: number;
+  z: number;
+};
+
+function buildInteractives(): Interactive[] {
+  return ROOMS.flatMap((room) => {
+    const sign = sideSign(room.side);
+    const cx = roomCenterX(room.side);
+    return [
+      { key: `${room.id}-speaker`, room, kind: "speaker" as const, x: cx - sign * 1.5, z: room.z - 1.6 },
+      {
+        key: `${room.id}-board`,
+        room,
+        kind: "board" as const,
+        x: sign * (HALF + WALL_T + ROOM_SIZE - 0.55),
+        z: room.z + 1.1,
+      },
+    ];
+  });
+}
+
+const INTERACTIVES = buildInteractives();
+
+function resolveCollisions(pos: THREE.Vector2, radius = PLAYER_R) {
+  for (const w of WALLS) {
+    const hx = w.sx / 2 + radius;
+    const hz = w.sz / 2 + radius;
+    const dx = pos.x - w.cx;
+    const dz = pos.y - w.cz;
+    if (Math.abs(dx) < hx && Math.abs(dz) < hz) {
+      const penX = hx - Math.abs(dx);
+      const penZ = hz - Math.abs(dz);
+      if (penX < penZ) pos.x += Math.sign(dx || 1) * penX;
+      else pos.y += Math.sign(dz || 1) * penZ;
+    }
+  }
+}
+
+/** Shortest travel fraction from `from` toward `to` before hitting a wall (2D). */
+function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.4) {
+  const dx = to.x - from.x;
+  const dz = to.y - from.y;
+  let best = 1;
+  for (const w of WALLS) {
+    const hx = w.sx / 2 + pad;
+    const hz = w.sz / 2 + pad;
+    const minX = w.cx - hx;
+    const maxX = w.cx + hx;
+    const minZ = w.cz - hz;
+    const maxZ = w.cz + hz;
+    let t0 = 0;
+    let t1 = 1;
+    for (const [o, d, lo, hi] of [
+      [from.x, dx, minX, maxX],
+      [from.y, dz, minZ, maxZ],
+    ] as [number, number, number, number][]) {
+      if (Math.abs(d) < 1e-6) {
+        if (o < lo || o > hi) {
+          t0 = 1;
+          t1 = 0;
+          break;
+        }
+        continue;
+      }
+      let ta = (lo - o) / d;
+      let tb = (hi - o) / d;
+      if (ta > tb) [ta, tb] = [tb, ta];
+      t0 = Math.max(t0, ta);
+      t1 = Math.min(t1, tb);
+    }
+    if (t0 <= t1 && t0 >= 0 && t0 < best) best = t0;
+  }
+  return Math.max(best * 0.92, 0.34);
+}
+
+function useKeys() {
+  const keys = useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    const watched = ["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
+    const down = (e: KeyboardEvent) => {
+      if (watched.includes(e.code)) {
+        e.preventDefault();
+        keys.current[e.code] = true;
+      }
+    };
+    const up = (e: KeyboardEvent) => {
+      if (watched.includes(e.code)) {
+        e.preventDefault();
+        keys.current[e.code] = false;
+      }
+    };
+    window.addEventListener("keydown", down, { passive: false });
+    window.addEventListener("keyup", up, { passive: false });
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, []);
+  return keys;
+}
+
+function Character({ groupRef }: { groupRef: React.RefObject<THREE.Group | null> }) {
+  return (
+    <group ref={groupRef}>
+      {/* legs */}
+      <mesh position={[-0.16, 0.35, 0]} castShadow>
+        <boxGeometry args={[0.24, 0.7, 0.26]} />
+        <meshStandardMaterial color="#3E4C59" />
+      </mesh>
+      <mesh position={[0.16, 0.35, 0]} castShadow>
+        <boxGeometry args={[0.24, 0.7, 0.26]} />
+        <meshStandardMaterial color="#3E4C59" />
+      </mesh>
+      {/* torso */}
+      <mesh position={[0, 1.05, 0]} castShadow>
+        <boxGeometry args={[0.62, 0.72, 0.34]} />
+        <meshStandardMaterial color="#D9784F" />
+      </mesh>
+      {/* arms */}
+      <mesh position={[-0.42, 1.05, 0]} castShadow>
+        <boxGeometry args={[0.2, 0.66, 0.24]} />
+        <meshStandardMaterial color="#C96A44" />
+      </mesh>
+      <mesh position={[0.42, 1.05, 0]} castShadow>
+        <boxGeometry args={[0.2, 0.66, 0.24]} />
+        <meshStandardMaterial color="#C96A44" />
+      </mesh>
+      {/* head */}
+      <mesh position={[0, 1.63, 0]} castShadow>
+        <boxGeometry args={[0.46, 0.46, 0.44]} />
+        <meshStandardMaterial color="#E8B48C" />
+      </mesh>
+      {/* hair */}
+      <mesh position={[0, 1.85, -0.02]} castShadow>
+        <boxGeometry args={[0.5, 0.16, 0.48]} />
+        <meshStandardMaterial color="#3A2A20" />
+      </mesh>
+    </group>
+  );
+}
+
+function Structure() {
+  return (
+    <group>
+      {/* hallway floor + ceiling */}
+      <mesh position={[0, -0.06, (HALL_START + HALL_END) / 2]} receiveShadow>
+        <boxGeometry args={[HALL_W + WALL_T * 2, 0.12, HALL_END - HALL_START]} />
+        <meshStandardMaterial color={COLORS.floor} />
+      </mesh>
+      <mesh position={[0, HALL_H + 0.06, (HALL_START + HALL_END) / 2]}>
+        <boxGeometry args={[HALL_W + WALL_T * 2, 0.12, HALL_END - HALL_START]} />
+        <meshStandardMaterial color={COLORS.ceiling} side={THREE.BackSide} />
+      </mesh>
+      {/* floor plank seams */}
+      {Array.from({ length: Math.floor((HALL_END - HALL_START) / 1.5) }).map((_, i) => (
+        <mesh key={i} position={[0, 0.005, HALL_START + i * 1.5]}>
+          <boxGeometry args={[HALL_W, 0.02, 0.06]} />
+          <meshStandardMaterial color={COLORS.floorDark} />
+        </mesh>
+      ))}
+      {/* walls */}
+      {WALLS.map((w, i) => (
+        <mesh key={i} position={[w.cx, HALL_H / 2, w.cz]} castShadow receiveShadow>
+          <boxGeometry args={[w.sx, HALL_H, w.sz]} />
+          <meshStandardMaterial color={COLORS.wall} side={THREE.BackSide} />
+        </mesh>
+      ))}
+      {/* baseboard trim along hallway */}
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[s * (HALF - 0.02), 0.14, (HALL_START + HALL_END) / 2]}>
+          <boxGeometry args={[0.06, 0.28, HALL_END - HALL_START]} />
+          <meshStandardMaterial color={COLORS.trim} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function RoomShell({ room }: { room: Room }) {
+  const sign = sideSign(room.side);
+  const cx = roomCenterX(room.side);
+  return (
+    <group>
+      <mesh position={[cx, -0.06, room.z]} receiveShadow>
+        <boxGeometry args={[ROOM_SIZE + WALL_T * 2, 0.12, ROOM_SIZE + WALL_T * 2]} />
+        <meshStandardMaterial color={COLORS.floor} />
+      </mesh>
+      <mesh position={[cx, HALL_H + 0.06, room.z]}>
+        <boxGeometry args={[ROOM_SIZE + WALL_T * 2, 0.12, ROOM_SIZE + WALL_T * 2]} />
+        <meshStandardMaterial color={COLORS.ceiling} side={THREE.BackSide} />
+      </mesh>
+      {/* interior accent trim rail */}
+      {[-1, 1].map((dz) => (
+        <mesh key={dz} position={[cx, 1.05, room.z + dz * (ROOM_SIZE / 2 - 0.03)]}>
+          <boxGeometry args={[ROOM_SIZE, 0.1, 0.06]} />
+          <meshStandardMaterial color={room.accent} />
+        </mesh>
+      ))}
+      <mesh position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.03), 1.05, room.z]}>
+        <boxGeometry args={[0.06, 0.1, ROOM_SIZE]} />
+        <meshStandardMaterial color={room.accent} />
+      </mesh>
+      {/* bed */}
+      <mesh position={[cx + sign * 1.5, 0.28, room.z + 1.4]} castShadow>
+        <boxGeometry args={[1.1, 0.45, 2]} />
+        <meshStandardMaterial color={COLORS.trim} />
+      </mesh>
+      <mesh position={[cx + sign * 1.5, 0.58, room.z + 1.4]} castShadow>
+        <boxGeometry args={[1.05, 0.18, 1.9]} />
+        <meshStandardMaterial color={room.accent} />
+      </mesh>
+      {/* rug */}
+      <mesh position={[cx, 0.02, room.z - 0.4]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[2.2, 1.8]} />
+        <meshStandardMaterial color={room.accent} opacity={0.5} transparent />
+      </mesh>
+      {/* desk */}
+      <mesh position={[cx - sign * 1.8, 0.75, room.z + 1.9]} castShadow>
+        <boxGeometry args={[1.4, 0.1, 0.7]} />
+        <meshStandardMaterial color={COLORS.trim} />
+      </mesh>
+    </group>
+  );
+}
+
+function DoorFrame({ room }: { room: Room }) {
+  const sign = sideSign(room.side);
+  const x = sign * WALL_CX;
+  return (
+    <group>
+      {/* lintel above the doorway */}
+      <mesh position={[x, (DOOR_H + HALL_H) / 2, room.z]}>
+        <boxGeometry args={[WALL_T, HALL_H - DOOR_H, DOOR_W]} />
+        <meshStandardMaterial color={COLORS.wall} />
+      </mesh>
+      {/* accent frame */}
+      {[-1, 1].map((dz) => (
+        <mesh key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.06)]}>
+          <boxGeometry args={[WALL_T + 0.04, DOOR_H, 0.12]} />
+          <meshStandardMaterial color={room.accent} />
+        </mesh>
+      ))}
+      <mesh position={[x, DOOR_H + 0.06, room.z]}>
+        <boxGeometry args={[WALL_T + 0.04, 0.12, DOOR_W + 0.24]} />
+        <meshStandardMaterial color={room.accent} />
+      </mesh>
+      {/* open door panel swung into the room */}
+      <mesh
+        position={[sign * (HALF + WALL_T + 0.35), DOOR_H / 2, room.z + DOOR_W / 2 + 0.6]}
+        rotation={[0, sign * 0.9, 0]}
+        castShadow
+      >
+        <boxGeometry args={[0.1, DOOR_H, DOOR_W]} />
+        <meshStandardMaterial color={COLORS.trim} />
+      </mesh>
+      {/* warm light above the door */}
+      <mesh position={[sign * (HALF - 0.12), 2.55, room.z]}>
+        <boxGeometry args={[0.16, 0.22, 0.5]} />
+        <meshStandardMaterial color="#FFE6B0" emissive="#FFC773" emissiveIntensity={1.2} />
+      </mesh>
+      <pointLight
+        position={[sign * (HALF - 0.4), 2.4, room.z]}
+        color="#FFCE8A"
+        intensity={7}
+        distance={9}
+        decay={2}
+      />
+      {/* name plaque */}
+      <Html
+        position={[sign * (HALF - 0.05), 2.05, room.z]}
+        center
+        distanceFactor={7}
+        zIndexRange={[10, 0]}
+      >
+        <div className="dorm-plaque" style={{ borderColor: room.accent }}>
+          {room.name}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+function Speaker({ item, nearby }: { item: Interactive; nearby: boolean }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (ref.current) ref.current.position.y = 1.35 + Math.sin(clock.elapsedTime * 2) * 0.06;
+  });
+  return (
+    <group position={[item.x, 0, item.z]}>
+      <mesh position={[0, 0.55, 0]} castShadow>
+        <boxGeometry args={[0.6, 1.1, 0.55]} />
+        <meshStandardMaterial color={COLORS.trim} />
+      </mesh>
+      <mesh position={[0, 0.75, 0.29]}>
+        <cylinderGeometry args={[0.18, 0.18, 0.05, 8]} />
+        <meshStandardMaterial color={item.room.accent} />
+      </mesh>
+      <mesh position={[0, 0.75, 0.29]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.18, 0.18, 0.06, 8]} />
+        <meshStandardMaterial color={item.room.accent} />
+      </mesh>
+      <mesh position={[0, 0.3, 0.29]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.1, 0.1, 0.06, 8]} />
+        <meshStandardMaterial color="#2E241C" />
+      </mesh>
+      {nearby && (
+        <group ref={ref}>
+          <pointLight color={item.room.accent} intensity={4} distance={3} />
+          <mesh>
+            <octahedronGeometry args={[0.16, 0]} />
+            <meshStandardMaterial
+              color={item.room.accent}
+              emissive={item.room.accent}
+              emissiveIntensity={0.9}
+            />
+          </mesh>
+        </group>
+      )}
+    </group>
+  );
+}
+
+function BulletinBoard({ item, nearby }: { item: Interactive; nearby: boolean }) {
+  const sign = sideSign(item.room.side);
+  const ref = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (ref.current) ref.current.position.y = 2.25 + Math.sin(clock.elapsedTime * 2 + 1) * 0.06;
+  });
+  return (
+    <group position={[item.x, 0, item.z]} rotation={[0, sign === -1 ? Math.PI / 2 : -Math.PI / 2, 0]}>
+      <mesh position={[0, 1.55, 0]} castShadow>
+        <boxGeometry args={[1.8, 1.2, 0.1]} />
+        <meshStandardMaterial color={item.room.accent} />
+      </mesh>
+      <mesh position={[0, 1.55, 0.06]}>
+        <boxGeometry args={[1.62, 1.02, 0.04]} />
+        <meshStandardMaterial color="#C9A57A" />
+      </mesh>
+      {[
+        [-0.5, 1.75],
+        [0.15, 1.85],
+        [0.55, 1.4],
+      ].map((pt, i) => (
+        <mesh key={i} position={[pt[0]!, pt[1]!, 0.1]} rotation={[0, 0, i * 0.15 - 0.15]}>
+          <boxGeometry args={[0.42, 0.32, 0.02]} />
+          <meshStandardMaterial color={i === 2 ? "#F2E8D5" : "#FBF6EA"} />
+        </mesh>
+      ))}
+      {nearby && (
+        <group ref={ref}>
+          <pointLight color={item.room.accent} intensity={4} distance={3} />
+          <mesh>
+            <octahedronGeometry args={[0.16, 0]} />
+            <meshStandardMaterial
+              color={item.room.accent}
+              emissive={item.room.accent}
+              emissiveIntensity={0.9}
+            />
+          </mesh>
+        </group>
+      )}
+    </group>
+  );
+}
+
+function World({
+  onNearby,
+  onActive,
+}: {
+  onNearby: (keys: string[]) => void;
+  onActive: (key: string | null) => void;
+}) {
+  const keys = useKeys();
+  const player = useRef(new THREE.Vector2(0, 0));
+  const facing = useRef(new THREE.Vector2(0, 1));
+  const group = useRef<THREE.Group>(null);
+  const camera = useThree((s) => s.camera);
+  const cam = useRef<THREE.Camera>(camera);
+  cam.current = camera;
+  const lookAt = useRef(new THREE.Vector3(0, 1.2, 2));
+  const nearbyRef = useRef<string>("");
+  const activeRef = useRef<string | null>(null);
+  const [nearby, setNearby] = useState<string[]>([]);
+
+  useFrame((_, rawDelta) => {
+    const delta = Math.min(rawDelta, 0.05);
+    const k = keys.current;
+    const ix = (k['KeyD'] || k['ArrowRight'] ? 1 : 0) - (k['KeyA'] || k['ArrowLeft'] ? 1 : 0);
+    const iz = (k['KeyW'] || k['ArrowUp'] ? 1 : 0) - (k['KeyS'] || k['ArrowDown'] ? 1 : 0);
+    const move = new THREE.Vector2(ix, iz);
+    if (move.lengthSq() > 0) {
+      move.normalize().multiplyScalar(3.2 * delta);
+      // doorway funnel: gently centre the walk line when squeezing through a door
+      if (Math.abs(move.x) > 0.001) {
+        for (const room of ROOMS) {
+          const sign = sideSign(room.side);
+          const distToPlane = Math.abs(player.current.x) - HALL_W / 2;
+          if (
+            Math.sign(player.current.x || sign) === sign &&
+            distToPlane > -1.1 &&
+            distToPlane < 1.1 &&
+            Math.abs(player.current.y - room.z) < 1.4
+          ) {
+            const dz = room.z - player.current.y;
+            player.current.y += THREE.MathUtils.clamp(dz, -2.5 * delta, 2.5 * delta);
+          }
+        }
+      }
+      player.current.x += move.x;
+      resolveCollisions(player.current);
+      player.current.y += move.y;
+      resolveCollisions(player.current);
+      facing.current.lerp(new THREE.Vector2(move.x, move.y).normalize(), 0.2).normalize();
+    }
+
+
+    if (group.current) {
+      group.current.position.set(player.current.x, 0, player.current.y);
+      const targetRot = Math.atan2(facing.current.x, facing.current.y);
+      const cur = group.current.rotation.y;
+      let diff = targetRot - cur;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      group.current.rotation.y = cur + diff * 0.15;
+      const bob = move.lengthSq() > 0 ? Math.abs(Math.sin(performance.now() * 0.012)) * 0.06 : 0;
+      group.current.position.y = bob;
+    }
+
+    {
+      const desired = new THREE.Vector3(
+        player.current.x - facing.current.x * 5,
+        2.5,
+        player.current.y - facing.current.y * 5,
+      );
+      // pull the camera in if a wall sits between the character and the ideal spot
+      const t = cameraClearance(
+        player.current,
+        new THREE.Vector2(desired.x, desired.z),
+      );
+      desired.x = player.current.x + (desired.x - player.current.x) * t;
+      desired.z = player.current.y + (desired.z - player.current.y) * t;
+      desired.y = 2.1 + (1 - t) * 2.6;
+      cam.current.position.lerp(desired, 1 - Math.pow(0.001, delta));
+      lookAt.current.lerp(
+        new THREE.Vector3(player.current.x, 1.15, player.current.y + facing.current.y * 0.5),
+        1 - Math.pow(0.002, delta),
+      );
+      cam.current.lookAt(lookAt.current);
+    }
+
+    // proximity
+    const near: string[] = [];
+    let closest: { key: string; d: number } | null = null;
+    for (const item of INTERACTIVES) {
+      const d = Math.hypot(item.x - player.current.x, item.z - player.current.y);
+      if (d < 2.2) near.push(item.key);
+      if (d < 1.35 && (!closest || d < closest.d)) closest = { key: item.key, d };
+    }
+    const sig = near.join("|");
+    if (sig !== nearbyRef.current) {
+      nearbyRef.current = sig;
+      setNearby(near);
+      onNearby(near);
+    }
+    const activeKey = closest ? closest.key : null;
+    if (activeKey !== activeRef.current) {
+      activeRef.current = activeKey;
+      onActive(activeKey);
+    }
+  });
+
+  return (
+    <>
+      <color attach="background" args={[COLORS.fog]} />
+      <fog attach="fog" args={[COLORS.fog, 14, 34]} />
+
+      <ambientLight intensity={0.55} color="#FFE9CC" />
+      <hemisphereLight intensity={0.4} color="#FFF0D8" groundColor="#8A6440" />
+      <directionalLight
+        position={[6, 9, -4]}
+        intensity={1.5}
+        color="#FFD8A0"
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-14}
+        shadow-camera-right={14}
+        shadow-camera-top={14}
+        shadow-camera-bottom={-14}
+        shadow-camera-far={50}
+      />
+
+      <Structure />
+      {ROOMS.map((room) => (
+        <group key={room.id}>
+          <RoomShell room={room} />
+          <DoorFrame room={room} />
+        </group>
+      ))}
+      {INTERACTIVES.map((item) =>
+        item.kind === "speaker" ? (
+          <Speaker key={item.key} item={item} nearby={nearby.includes(item.key)} />
+        ) : (
+          <BulletinBoard key={item.key} item={item} nearby={nearby.includes(item.key)} />
+        ),
+      )}
+      <Character groupRef={group} />
+    </>
+  );
+}
+
+function Panel({ accent, title, children }: { accent: string; title: string; children: ReactNode }) {
+  return (
+    <div className="dorm-panel" style={{ borderColor: accent }}>
+      <div className="dorm-panel-title" style={{ color: accent }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+export default function DormHallway() {
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const active = useMemo(() => INTERACTIVES.find((i) => i.key === activeKey) ?? null, [activeKey]);
+
+  return (
+    <div className="relative h-screen w-full overflow-hidden">
+      <Canvas
+        shadows
+        dpr={[1, 2]}
+        gl={{ antialias: true }}
+        camera={{ fov: 57, near: 0.1, far: 80, position: [0, 2.5, -2] }}
+      >
+        <World onNearby={() => {}} onActive={setActiveKey} />
+      </Canvas>
+
+      <div className="pointer-events-none absolute left-6 top-6 select-none">
+        <h1 className="dorm-title">Dorm Hallway</h1>
+        <p className="dorm-sub">WASD to walk · step up to a speaker or board</p>
+      </div>
+
+      {active && active.kind === "speaker" && (
+        <div className="dorm-overlay">
+          <Panel accent={active.room.accent} title={`${active.room.name} — Top 5`}>
+            <ol className="dorm-songs">
+              {active.room.songs.map((s, i) => (
+                <li key={s.title}>
+                  <span className="dorm-rank" style={{ background: active.room.accent }}>
+                    {i + 1}
+                  </span>
+                  <span className="dorm-song">{s.title}</span>
+                  <span className="dorm-artist">{s.artist}</span>
+                </li>
+              ))}
+            </ol>
+          </Panel>
+        </div>
+      )}
+
+      {active && active.kind === "board" && (
+        <div className="dorm-overlay">
+          <Panel accent={active.room.accent} title={`${active.room.name} — Bulletin`}>
+            <ul className="dorm-bulletin">
+              {active.room.bulletin.map((b) => (
+                <li key={b.text}>
+                  {b.image && (
+                    <img
+                      src={b.image}
+                      alt={b.text}
+                      loading="lazy"
+                      width={512}
+                      height={640}
+                      className="dorm-flyer"
+                    />
+                  )}
+                  <span>
+                    {b.kind === "event" && (
+                      <em className="dorm-tag" style={{ background: active.room.accent }}>
+                        event
+                      </em>
+                    )}
+                    {b.text}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        </div>
+      )}
+    </div>
+  );
+}
