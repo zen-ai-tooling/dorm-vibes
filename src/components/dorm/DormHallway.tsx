@@ -151,7 +151,7 @@ function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.4) {
     }
     if (t0 <= t1 && t0 >= 0 && t0 < best) best = t0;
   }
-  return Math.max(best * 0.92, 0.12);
+  return Math.max(best * 0.92, 0.34);
 }
 
 function useKeys() {
@@ -230,7 +230,7 @@ function Structure() {
       </mesh>
       <mesh position={[0, HALL_H + 0.06, (HALL_START + HALL_END) / 2]}>
         <boxGeometry args={[HALL_W + WALL_T * 2, 0.12, HALL_END - HALL_START]} />
-        <meshStandardMaterial color={COLORS.ceiling} />
+        <meshStandardMaterial color={COLORS.ceiling} side={THREE.BackSide} />
       </mesh>
       {/* floor plank seams */}
       {Array.from({ length: Math.floor((HALL_END - HALL_START) / 1.5) }).map((_, i) => (
@@ -243,7 +243,7 @@ function Structure() {
       {WALLS.map((w, i) => (
         <mesh key={i} position={[w.cx, HALL_H / 2, w.cz]} castShadow receiveShadow>
           <boxGeometry args={[w.sx, HALL_H, w.sz]} />
-          <meshStandardMaterial color={COLORS.wall} />
+          <meshStandardMaterial color={COLORS.wall} side={THREE.BackSide} />
         </mesh>
       ))}
       {/* baseboard trim along hallway */}
@@ -268,7 +268,7 @@ function RoomShell({ room }: { room: Room }) {
       </mesh>
       <mesh position={[cx, HALL_H + 0.06, room.z]}>
         <boxGeometry args={[ROOM_SIZE + WALL_T * 2, 0.12, ROOM_SIZE + WALL_T * 2]} />
-        <meshStandardMaterial color={COLORS.ceiling} />
+        <meshStandardMaterial color={COLORS.ceiling} side={THREE.BackSide} />
       </mesh>
       {/* interior accent trim rail */}
       {[-1, 1].map((dz) => (
@@ -350,7 +350,7 @@ function DoorFrame({ room }: { room: Room }) {
       <Html
         position={[sign * (HALF - 0.05), 2.05, room.z]}
         center
-        distanceFactor={9}
+        distanceFactor={7}
         zIndexRange={[10, 0]}
       >
         <div className="dorm-plaque" style={{ borderColor: room.accent }}>
@@ -503,10 +503,10 @@ function World({
       );
       desired.x = player.current.x + (desired.x - player.current.x) * t;
       desired.z = player.current.y + (desired.z - player.current.y) * t;
-      desired.y = 1.6 + 0.9 * t;
+      desired.y = 2.1 + (1 - t) * 2.6;
       cam.current.position.lerp(desired, 1 - Math.pow(0.001, delta));
       lookAt.current.lerp(
-        new THREE.Vector3(player.current.x, 1.3, player.current.y + facing.current.y * 0.5),
+        new THREE.Vector3(player.current.x, 1.15, player.current.y + facing.current.y * 0.5),
         1 - Math.pow(0.002, delta),
       );
       cam.current.lookAt(lookAt.current);
