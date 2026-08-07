@@ -151,7 +151,7 @@ function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.4) {
     }
     if (t0 <= t1 && t0 >= 0 && t0 < best) best = t0;
   }
-  return Math.max(best * 0.92, 0.45);
+  return Math.max(best * 0.92, 0.62);
 }
 
 function useKeys() {
