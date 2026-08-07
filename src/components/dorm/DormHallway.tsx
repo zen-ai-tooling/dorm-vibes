@@ -118,7 +118,7 @@ function resolveCollisions(pos: THREE.Vector2, radius = PLAYER_R) {
 }
 
 /** Shortest travel fraction from `from` toward `to` before hitting a wall (2D). */
-function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.4) {
+function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.28) {
   const dx = to.x - from.x;
   const dz = to.y - from.y;
   let best = 1;
@@ -151,7 +151,7 @@ function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.4) {
     }
     if (t0 <= t1 && t0 >= 0 && t0 < best) best = t0;
   }
-  return Math.max(best * 0.92, 0.34);
+  return Math.max(best * 0.92, 0.62);
 }
 
 function useKeys() {
@@ -508,10 +508,11 @@ function World({
     }
 
     {
+      const BASE_DIST = 3;
       const desired = new THREE.Vector3(
-        player.current.x - facing.current.x * 5,
-        2.5,
-        player.current.y - facing.current.y * 5,
+        player.current.x - facing.current.x * BASE_DIST,
+        2,
+        player.current.y - facing.current.y * BASE_DIST,
       );
       // pull the camera in if a wall sits between the character and the ideal spot
       const t = cameraClearance(
@@ -520,14 +521,17 @@ function World({
       );
       desired.x = player.current.x + (desired.x - player.current.x) * t;
       desired.z = player.current.y + (desired.z - player.current.y) * t;
-      desired.y = 2.1 + (1 - t) * 2.6;
-      cam.current.position.lerp(desired, 1 - Math.pow(0.001, delta));
+      desired.y = 1.9 + (1 - t) * 1.4;
+      // frame-rate independent damping
+      cam.current.position.lerp(desired, 1 - Math.pow(0.0001, delta));
+      // always keep the character centred in frame
       lookAt.current.lerp(
-        new THREE.Vector3(player.current.x, 1.15, player.current.y + facing.current.y * 0.5),
-        1 - Math.pow(0.002, delta),
+        new THREE.Vector3(player.current.x, 1.15, player.current.y),
+        1 - Math.pow(0.0005, delta),
       );
       cam.current.lookAt(lookAt.current);
     }
+
 
     // proximity
     const near: string[] = [];
@@ -610,7 +614,7 @@ export default function DormHallway() {
         shadows
         dpr={[1, 2]}
         gl={{ antialias: true }}
-        camera={{ fov: 57, near: 0.1, far: 80, position: [0, 2.5, -2] }}
+        camera={{ fov: 62, near: 0.1, far: 80, position: [0, 2.5, -2] }}
       >
         <World onNearby={() => {}} onActive={setActiveKey} />
       </Canvas>
