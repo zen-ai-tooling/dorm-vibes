@@ -508,10 +508,11 @@ function World({
     }
 
     {
+      const BASE_DIST = 3;
       const desired = new THREE.Vector3(
-        player.current.x - facing.current.x * 5,
-        2.5,
-        player.current.y - facing.current.y * 5,
+        player.current.x - facing.current.x * BASE_DIST,
+        2,
+        player.current.y - facing.current.y * BASE_DIST,
       );
       // pull the camera in if a wall sits between the character and the ideal spot
       const t = cameraClearance(
@@ -520,14 +521,17 @@ function World({
       );
       desired.x = player.current.x + (desired.x - player.current.x) * t;
       desired.z = player.current.y + (desired.z - player.current.y) * t;
-      desired.y = 2.1 + (1 - t) * 2.6;
-      cam.current.position.lerp(desired, 1 - Math.pow(0.001, delta));
+      desired.y = 1.9 + (1 - t) * 1.4;
+      // frame-rate independent damping
+      cam.current.position.lerp(desired, 1 - Math.pow(0.0001, delta));
+      // always keep the character centred in frame
       lookAt.current.lerp(
-        new THREE.Vector3(player.current.x, 1.15, player.current.y + facing.current.y * 0.5),
-        1 - Math.pow(0.002, delta),
+        new THREE.Vector3(player.current.x, 1.15, player.current.y),
+        1 - Math.pow(0.0005, delta),
       );
       cam.current.lookAt(lookAt.current);
     }
+
 
     // proximity
     const near: string[] = [];
