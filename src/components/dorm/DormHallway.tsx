@@ -490,7 +490,10 @@ function World({
       group.current.position.y = bob;
     }
 
-    if (typeof window !== "undefined" && window.location.search.includes("debugcam")) {
+    if (typeof window !== "undefined" && window.location.search.includes("debugin")) {
+      cam.current.position.set(0, 2.0, -2.4);
+      cam.current.lookAt(new THREE.Vector3(0, 1.3, 6));
+    } else if (typeof window !== "undefined" && window.location.search.includes("debugcam")) {
       cam.current.position.set(16, 18, 8);
       cam.current.lookAt(new THREE.Vector3(0, 0, 8));
     } else {
