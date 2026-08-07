@@ -513,6 +513,7 @@ function World({
         1 - Math.pow(0.002, delta),
       );
       cam.current.lookAt(lookAt.current);
+      if (Math.random() < 0.02) console.log("CAM", JSON.stringify(cam.current.position.toArray()), JSON.stringify(player.current.toArray()));
     }
 
     // proximity
