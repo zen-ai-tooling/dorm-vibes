@@ -513,6 +513,7 @@ function World({
         1 - Math.pow(0.002, delta),
       );
       cam.current.lookAt(lookAt.current);
+      (window as any).__f = ((window as any).__f || 0) + 1;
       if (Math.random() < 0.02) console.log("CAM", JSON.stringify(cam.current.position.toArray()), JSON.stringify(player.current.toArray()));
     }
 
