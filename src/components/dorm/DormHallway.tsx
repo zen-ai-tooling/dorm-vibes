@@ -471,12 +471,29 @@ function World({
     const move = new THREE.Vector2(ix, iz);
     if (move.lengthSq() > 0) {
       move.normalize().multiplyScalar(3.2 * delta);
+      // doorway funnel: gently centre the walk line when squeezing through a door
+      if (Math.abs(move.x) > 0.001) {
+        for (const room of ROOMS) {
+          const sign = sideSign(room.side);
+          const distToPlane = Math.abs(player.current.x) - HALL_W / 2;
+          if (
+            Math.sign(player.current.x || sign) === sign &&
+            distToPlane > -1.1 &&
+            distToPlane < 1.1 &&
+            Math.abs(player.current.y - room.z) < 1.4
+          ) {
+            const dz = room.z - player.current.y;
+            player.current.y += THREE.MathUtils.clamp(dz, -2.5 * delta, 2.5 * delta);
+          }
+        }
+      }
       player.current.x += move.x;
       resolveCollisions(player.current);
       player.current.y += move.y;
       resolveCollisions(player.current);
       facing.current.lerp(new THREE.Vector2(move.x, move.y).normalize(), 0.2).normalize();
     }
+
 
     if (group.current) {
       group.current.position.set(player.current.x, 0, player.current.y);
