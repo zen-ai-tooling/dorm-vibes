@@ -118,7 +118,7 @@ function resolveCollisions(pos: THREE.Vector2, radius = PLAYER_R) {
 }
 
 /** Shortest travel fraction from `from` toward `to` before hitting a wall (2D). */
-function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.4) {
+function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.28) {
   const dx = to.x - from.x;
   const dz = to.y - from.y;
   let best = 1;
