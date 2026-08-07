@@ -151,7 +151,7 @@ function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.4) {
     }
     if (t0 <= t1 && t0 >= 0 && t0 < best) best = t0;
   }
-  return Math.max(best * 0.92, 0.34);
+  return Math.max(best * 0.92, 0.45);
 }
 
 function useKeys() {
@@ -614,7 +614,7 @@ export default function DormHallway() {
         shadows
         dpr={[1, 2]}
         gl={{ antialias: true }}
-        camera={{ fov: 57, near: 0.1, far: 80, position: [0, 2.5, -2] }}
+        camera={{ fov: 62, near: 0.1, far: 80, position: [0, 2.5, -2] }}
       >
         <World onNearby={() => {}} onActive={setActiveKey} />
       </Canvas>
