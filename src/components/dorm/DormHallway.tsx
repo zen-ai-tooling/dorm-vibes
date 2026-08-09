@@ -267,25 +267,30 @@ function RoomShell({ room }: { room: Room }) {
   const cx = roomCenterX(room.side);
   return (
     <group>
-      <mesh position={[cx, -0.06, room.z]} receiveShadow>
-        <boxGeometry args={[ROOM_SIZE + WALL_T * 2, 0.12, ROOM_SIZE + WALL_T * 2]} />
+      {/* floor/ceiling slabs butt up against the hallway slab (which already
+          covers up to HALF + WALL_T) instead of overlapping it — overlapping
+          coplanar slabs were the source of the z-fighting at the doorways */}
+      <mesh position={[cx + sign * (WALL_T / 2), -0.06, room.z]} receiveShadow>
+        <boxGeometry args={[ROOM_SIZE + WALL_T, 0.12, ROOM_SIZE + WALL_T * 2]} />
         <meshStandardMaterial color={COLORS.floor} />
       </mesh>
-      <mesh position={[cx, HALL_H + 0.06, room.z]}>
-        <boxGeometry args={[ROOM_SIZE + WALL_T * 2, 0.12, ROOM_SIZE + WALL_T * 2]} />
+      <mesh position={[cx + sign * (WALL_T / 2), HALL_H + 0.06, room.z]}>
+        <boxGeometry args={[ROOM_SIZE + WALL_T, 0.12, ROOM_SIZE + WALL_T * 2]} />
         <meshStandardMaterial color={COLORS.ceiling} side={THREE.BackSide} />
       </mesh>
-      {/* interior accent trim rail */}
+      {/* interior accent trim rail — embedded 0.01 into the wall so no face is
+          coplanar with the wall surface behind it */}
       {[-1, 1].map((dz) => (
-        <mesh key={dz} position={[cx, 1.05, room.z + dz * (ROOM_SIZE / 2 - 0.03)]}>
-          <boxGeometry args={[ROOM_SIZE, 0.1, 0.06]} />
+        <mesh key={dz} position={[cx, 1.05, room.z + dz * (ROOM_SIZE / 2 - 0.02)]}>
+          <boxGeometry args={[ROOM_SIZE - 0.02, 0.1, 0.06]} />
           <meshStandardMaterial color={room.accent} />
         </mesh>
       ))}
-      <mesh position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.03), 1.05, room.z]}>
-        <boxGeometry args={[0.06, 0.1, ROOM_SIZE]} />
+      <mesh position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.02), 1.05, room.z]}>
+        <boxGeometry args={[0.06, 0.1, ROOM_SIZE - 0.02]} />
         <meshStandardMaterial color={room.accent} />
       </mesh>
+
       {/* bed */}
       <mesh position={[cx + sign * 1.5, 0.28, room.z + 1.4]} castShadow>
         <boxGeometry args={[1.1, 0.45, 2]} />
