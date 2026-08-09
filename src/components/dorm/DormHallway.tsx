@@ -27,7 +27,14 @@ import { DoorStickers, NowPlayingPulse } from "./DoorDecor";
 import { RoomMood } from "./RoomMood";
 
 
-type Box = { cx: number; cz: number; sx: number; sz: number };
+type Box = {
+  cx: number;
+  cz: number;
+  sx: number;
+  sz: number;
+  /** which box face points away from any interior space, if any */
+  out?: "+x" | "-x" | "+z" | "-z";
+};
 
 const HALF = HALL_W / 2;
 const WALL_CX = HALF + WALL_T / 2;
@@ -74,7 +81,16 @@ function buildWalls(): Box[] {
       (r) => [r.z - DOOR_W / 2, r.z + DOOR_W / 2] as [number, number],
     );
     for (const [a, b] of splitRun(HALL_START, HALL_END, gaps)) {
-      walls.push({ cx: sign * WALL_CX, cz: (a + b) / 2, sx: WALL_T, sz: b - a });
+      walls.push({
+        cx: sign * WALL_CX,
+        cz: (a + b) / 2,
+        sx: WALL_T,
+        sz: b - a,
+        // hallway runs only show an exterior face where no room sits behind
+        ...(ROOMS.some((r) => sideSign(r.side) === sign && Math.abs(r.z - (a + b) / 2) < ROOM_SIZE / 2)
+          ? {}
+          : { out: sign > 0 ? ("+x" as const) : ("-x" as const) }),
+      });
     }
   }
   // hallway back wall
@@ -83,13 +99,20 @@ function buildWalls(): Box[] {
     cz: HALL_START - WALL_T / 2,
     sx: HALL_W + WALL_T * 2,
     sz: WALL_T,
+    out: "-z",
   });
 
   // room shells
   for (const room of ROOMS) {
     const sign = sideSign(room.side);
     const outerX = sign * (HALF + WALL_T + ROOM_SIZE + WALL_T / 2);
-    walls.push({ cx: outerX, cz: room.z, sx: WALL_T, sz: ROOM_SIZE + WALL_T * 2 });
+    walls.push({
+      cx: outerX,
+      cz: room.z,
+      sx: WALL_T,
+      sz: ROOM_SIZE + WALL_T * 2,
+      out: sign > 0 ? "+x" : "-x",
+    });
     const cx = roomCenterX(room.side);
     for (const dz of [-1, 1]) {
       // side walls run the full depth so they interpenetrate (rather than
@@ -99,6 +122,7 @@ function buildWalls(): Box[] {
         cz: room.z + dz * (ROOM_SIZE / 2 + WALL_T / 2),
         sx: ROOM_SIZE + WALL_T * 2,
         sz: WALL_T,
+        out: dz > 0 ? "+z" : "-z",
       });
     }
 
@@ -468,8 +492,18 @@ function Structure() {
               <boxGeometry args={[p.sx, p.sy, p.sz]} />
               {/* DoubleSide, not BackSide: with BackSide the near wall face was
                   culled, so it wrote no depth and room furniture bled through the
-                  wall and fought with the far face */}
-              <meshStandardMaterial color={COLORS.wall} side={THREE.DoubleSide} />
+                  wall and fought with the far face. Faces are addressed
+                  individually so the outward skin can carry a finished
+                  exterior tone instead of raw interior plaster. */}
+              {(["+x", "-x", "+y", "-y", "+z", "-z"] as const).map((face, m) => (
+                <meshStandardMaterial
+                  key={face}
+                  attach={`material-${m}`}
+                  color={face === w.out ? COLORS.wallOuter : COLORS.wall}
+                  roughness={face === w.out ? 0.95 : 0.85}
+                  side={THREE.DoubleSide}
+                />
+              ))}
             </mesh>
             {/* cap: closes the open-looking top edge of full-height runs */}
             {p.cy + p.sy / 2 > HALL_H - 0.05 && (
