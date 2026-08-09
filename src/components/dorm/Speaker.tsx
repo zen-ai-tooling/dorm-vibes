@@ -54,11 +54,11 @@ export function Speaker({
       <GroundAO size={1.55} opacity={0.46} />
       <group rotation={[0, skew, 0]}>
         {/* stand */}
-        <SoftBox position={[0, 0.3, 0]} args={[0.78, 0.6, 0.6]} radius={0.12} castShadow receiveShadow>
+        <SoftBox position={[0, 0.3, 0]} args={[0.78, 0.6, 0.6]} radius={0.12} receiveShadow>
           <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
         </SoftBox>
         {/* grille cabinet with a dotted speaker face */}
-        <SoftBox position={[0, 0.62, 0.02]} args={[0.86, 0.28, 0.64]} radius={0.1} castShadow>
+        <SoftBox position={[0, 0.62, 0.02]} args={[0.86, 0.28, 0.64]} radius={0.1}>
           <meshStandardMaterial color="#3A2C22" roughness={0.9} />
         </SoftBox>
         {[-1, 1].map((s) => (
@@ -84,13 +84,13 @@ export function Speaker({
         )}
 
         {/* deck plate */}
-        <SoftBox position={[0, 0.83, 0]} args={[0.92, 0.11, 0.72]} radius={0.045} castShadow receiveShadow>
+        <SoftBox position={[0, 0.83, 0]} args={[0.92, 0.11, 0.72]} radius={0.045} receiveShadow>
           <meshStandardMaterial color="#5A4736" roughness={0.85} />
         </SoftBox>
 
         {/* platter + record */}
         <group ref={platter} position={[-0.1, 0.9, 0]}>
-          <mesh rotation={[0, 0, 0]} castShadow>
+          <mesh rotation={[0, 0, 0]}>
             <cylinderGeometry args={[0.26, 0.26, 0.035, 20]} />
             <meshStandardMaterial color="#1D1815" roughness={0.6} />
           </mesh>
@@ -123,7 +123,7 @@ export function Speaker({
 
         {/* dials */}
         {[-1, 1].map((s) => (
-          <mesh key={s} position={[0.3, 0.9, s * 0.2 + 0.16]} castShadow>
+          <mesh key={s} position={[0.3, 0.9, s * 0.2 + 0.16]}>
             <cylinderGeometry args={[0.045, 0.05, 0.05, 12]} />
             <meshStandardMaterial color="#B7A078" roughness={0.6} />
           </mesh>
