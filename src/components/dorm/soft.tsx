@@ -19,7 +19,7 @@ import * as THREE from "three";
 export function SoftBox({
   args,
   radius,
-  smoothness = 2,
+  smoothness = 1,
   children,
   ...rest
 }: {

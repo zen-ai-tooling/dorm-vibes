@@ -194,9 +194,9 @@ export function DaylightRig() {
         intensity={2.1}
         color="#FFD8A0"
         castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-radius={6}
-        shadow-blurSamples={12}
+        shadow-mapSize={[1024, 1024]}
+        shadow-radius={4}
+        shadow-blurSamples={6}
         shadow-bias={-0.0004}
         shadow-normalBias={0.035}
         shadow-camera-left={-14}
