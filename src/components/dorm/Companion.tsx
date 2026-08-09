@@ -2,40 +2,46 @@ import { useRef, type ReactElement } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { CompanionVariant, Room } from "@/lib/dorm-data";
+import { SoftBox, GroundAO, jitter } from "./soft";
 
 /**
  * Low-poly companion models, keyed by the variant identifier in the room's
  * `companion` config. Adding a new variant = adding an entry here; no
  * room-specific JSX anywhere.
+ *
+ * Shape language: rounded/beveled volumes only — spheres, capsules, cones and
+ * SoftBoxes — so nothing reads as a hard cube at diorama distance.
  */
 function Succulent({ accent }: { accent: string }) {
   return (
     <group>
       <mesh position={[0, 0.12, 0]} castShadow>
-        <cylinderGeometry args={[0.15, 0.12, 0.24, 6]} />
-        <meshStandardMaterial color="#C97B52" />
+        <cylinderGeometry args={[0.15, 0.12, 0.24, 8]} />
+        <meshStandardMaterial color="#C97B52" roughness={0.9} />
       </mesh>
       <mesh position={[0, 0.25, 0]}>
-        <cylinderGeometry args={[0.16, 0.16, 0.04, 6]} />
-        <meshStandardMaterial color={accent} />
+        <sphereGeometry args={[0.16, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color={accent} roughness={0.85} />
       </mesh>
       {[0, 1, 2, 3, 4].map((i) => {
-        const a = (i / 5) * Math.PI * 2;
+        const a = (i / 5) * Math.PI * 2 + 0.2;
+        const lean = 0.5 + jitter(`suc${i}`, 0.12);
         return (
           <mesh
             key={i}
             position={[Math.cos(a) * 0.08, 0.34, Math.sin(a) * 0.08]}
-            rotation={[Math.cos(a) * 0.5, 0, -Math.sin(a) * 0.5]}
+            rotation={[Math.cos(a) * lean, 0, -Math.sin(a) * lean]}
+            scale={[1, 1, 1]}
             castShadow
           >
-            <coneGeometry args={[0.06, 0.22, 5]} />
-            <meshStandardMaterial color="#5F9E63" />
+            <capsuleGeometry args={[0.05, 0.16, 2, 8]} />
+            <meshStandardMaterial color="#5F9E63" roughness={0.9} />
           </mesh>
         );
       })}
-      <mesh position={[0, 0.4, 0]} castShadow>
-        <coneGeometry args={[0.06, 0.2, 5]} />
-        <meshStandardMaterial color="#6FB177" />
+      <mesh position={[0, 0.42, 0]} castShadow>
+        <capsuleGeometry args={[0.055, 0.14, 2, 8]} />
+        <meshStandardMaterial color="#6FB177" roughness={0.9} />
       </mesh>
     </group>
   );
@@ -45,20 +51,26 @@ function Fern({ accent }: { accent: string }) {
   return (
     <group>
       <mesh position={[0, 0.14, 0]} castShadow>
-        <cylinderGeometry args={[0.16, 0.13, 0.28, 6]} />
-        <meshStandardMaterial color={accent} />
+        <cylinderGeometry args={[0.16, 0.13, 0.28, 8]} />
+        <meshStandardMaterial color={accent} roughness={0.9} />
+      </mesh>
+      <mesh position={[0, 0.28, 0]}>
+        <sphereGeometry args={[0.165, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#4B3323" roughness={1} />
       </mesh>
       {[0, 1, 2, 3, 4, 5].map((i) => {
-        const a = (i / 6) * Math.PI * 2;
+        const a = (i / 6) * Math.PI * 2 + 0.35;
+        const lean = 0.8 + jitter(`fern${i}`, 0.16);
         return (
           <mesh
             key={i}
             position={[Math.cos(a) * 0.14, 0.46, Math.sin(a) * 0.14]}
-            rotation={[Math.cos(a) * 0.8, 0, -Math.sin(a) * 0.8]}
+            rotation={[Math.cos(a) * lean, 0, -Math.sin(a) * lean]}
+            scale={[1, 1, 0.35]}
             castShadow
           >
-            <boxGeometry args={[0.07, 0.42, 0.02]} />
-            <meshStandardMaterial color={i % 2 ? "#4F8B57" : "#63A46B"} />
+            <capsuleGeometry args={[0.05, 0.34, 2, 8]} />
+            <meshStandardMaterial color={i % 2 ? "#4F8B57" : "#63A46B"} roughness={0.95} />
           </mesh>
         );
       })}
@@ -69,27 +81,28 @@ function Fern({ accent }: { accent: string }) {
 function Cat({ accent }: { accent: string }) {
   return (
     <group>
-      <mesh position={[0, 0.16, 0]} castShadow>
-        <boxGeometry args={[0.28, 0.22, 0.5]} />
-        <meshStandardMaterial color="#6B6560" />
+      {/* loaf body — capsule, not a box */}
+      <mesh position={[0, 0.17, 0]} scale={[1, 0.82, 1]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <capsuleGeometry args={[0.15, 0.22, 3, 12]} />
+        <meshStandardMaterial color="#6B6560" roughness={0.95} />
       </mesh>
-      <mesh position={[0, 0.34, 0.2]} castShadow>
-        <boxGeometry args={[0.24, 0.22, 0.22]} />
-        <meshStandardMaterial color="#7A736D" />
+      <mesh position={[0, 0.34, 0.2]} scale={[1, 0.95, 0.95]} castShadow>
+        <sphereGeometry args={[0.13, 14, 10]} />
+        <meshStandardMaterial color="#7A736D" roughness={0.95} />
       </mesh>
       {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * 0.08, 0.47, 0.2]} castShadow>
-          <coneGeometry args={[0.06, 0.12, 4]} />
-          <meshStandardMaterial color="#7A736D" />
+        <mesh key={s} position={[s * 0.08, 0.45, 0.2]} rotation={[0, 0, s * 0.12]} castShadow>
+          <coneGeometry args={[0.055, 0.12, 8]} />
+          <meshStandardMaterial color="#7A736D" roughness={0.95} />
         </mesh>
       ))}
-      <mesh position={[0, 0.3, -0.3]} rotation={[0.5, 0, 0]} castShadow>
-        <boxGeometry args={[0.07, 0.07, 0.34]} />
-        <meshStandardMaterial color="#6B6560" />
+      <mesh position={[0, 0.3, -0.26]} rotation={[0.6, 0, 0]} castShadow>
+        <capsuleGeometry args={[0.032, 0.26, 2, 8]} />
+        <meshStandardMaterial color="#6B6560" roughness={0.95} />
       </mesh>
-      <mesh position={[0, 0.3, 0.31]}>
-        <boxGeometry args={[0.1, 0.05, 0.02]} />
-        <meshStandardMaterial color={accent} />
+      <mesh position={[0, 0.3, 0.3]} scale={[1.6, 0.5, 0.4]}>
+        <sphereGeometry args={[0.05, 10, 8]} />
+        <meshStandardMaterial color={accent} roughness={0.8} />
       </mesh>
     </group>
   );
@@ -98,31 +111,37 @@ function Cat({ accent }: { accent: string }) {
 function Dog({ accent }: { accent: string }) {
   return (
     <group>
-      <mesh position={[0, 0.2, 0]} castShadow>
-        <boxGeometry args={[0.32, 0.26, 0.56]} />
-        <meshStandardMaterial color="#B0885C" />
+      <mesh position={[0, 0.21, 0]} scale={[1, 0.86, 1]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <capsuleGeometry args={[0.17, 0.26, 3, 12]} />
+        <meshStandardMaterial color="#B0885C" roughness={0.95} />
       </mesh>
-      <mesh position={[0, 0.4, 0.26]} castShadow>
-        <boxGeometry args={[0.26, 0.24, 0.24]} />
-        <meshStandardMaterial color="#C09468" />
+      <mesh position={[0, 0.4, 0.26]} scale={[1, 0.95, 0.95]} castShadow>
+        <sphereGeometry args={[0.14, 14, 10]} />
+        <meshStandardMaterial color="#C09468" roughness={0.95} />
       </mesh>
-      <mesh position={[0, 0.34, 0.4]} castShadow>
-        <boxGeometry args={[0.14, 0.12, 0.12]} />
-        <meshStandardMaterial color="#5C4433" />
+      <mesh position={[0, 0.35, 0.39]} scale={[1, 0.8, 1]} castShadow>
+        <sphereGeometry args={[0.075, 12, 10]} />
+        <meshStandardMaterial color="#5C4433" roughness={0.9} />
       </mesh>
       {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * 0.15, 0.44, 0.26]} castShadow>
-          <boxGeometry args={[0.05, 0.2, 0.14]} />
-          <meshStandardMaterial color="#8E6A45" />
+        <mesh
+          key={s}
+          position={[s * 0.14, 0.42, 0.25]}
+          rotation={[0, 0, s * 0.2]}
+          scale={[0.45, 1, 0.8]}
+          castShadow
+        >
+          <capsuleGeometry args={[0.06, 0.1, 2, 8]} />
+          <meshStandardMaterial color="#8E6A45" roughness={0.95} />
         </mesh>
       ))}
-      <mesh position={[0, 0.36, -0.32]} rotation={[0.7, 0, 0]} castShadow>
-        <boxGeometry args={[0.08, 0.08, 0.26]} />
-        <meshStandardMaterial color="#B0885C" />
+      <mesh position={[0, 0.36, -0.3]} rotation={[0.8, 0, 0]} castShadow>
+        <capsuleGeometry args={[0.038, 0.2, 2, 8]} />
+        <meshStandardMaterial color="#B0885C" roughness={0.95} />
       </mesh>
-      <mesh position={[0, 0.32, 0.28]}>
-        <boxGeometry args={[0.28, 0.06, 0.24]} />
-        <meshStandardMaterial color={accent} />
+      <mesh position={[0, 0.33, 0.28]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.135, 0.026, 6, 16]} />
+        <meshStandardMaterial color={accent} roughness={0.8} />
       </mesh>
     </group>
   );
@@ -151,6 +170,8 @@ export function Companion({
   const marker = useRef<THREE.Group>(null);
   const cfg = room.companion;
   const Model = MODELS[cfg.variant] ?? Succulent;
+  // hand-placed feel: the plinth sits a hair off-axis, same every load
+  const skew = jitter(`plinth-${room.id}`, 0.07);
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
@@ -171,17 +192,18 @@ export function Companion({
 
   return (
     <group position={[x, 0, z]}>
-      {/* plinth / shelf */}
-      <mesh position={[0, 0.34, 0]} castShadow receiveShadow>
-        <boxGeometry args={[0.7, 0.68, 0.7]} />
-        <meshStandardMaterial color="#8C6A4A" />
-      </mesh>
-      <mesh position={[0, 0.7, 0]} receiveShadow>
-        <boxGeometry args={[0.8, 0.06, 0.8]} />
-        <meshStandardMaterial color={room.accent} />
-      </mesh>
-      <group ref={body} position={[0, 0.72, 0]}>
-        <Model accent={room.accent} />
+      <GroundAO size={1.5} opacity={0.42} />
+      {/* plinth / shelf — rotated a few degrees so it doesn't read grid-snapped */}
+      <group rotation={[0, skew, 0]}>
+        <SoftBox position={[0, 0.34, 0]} args={[0.7, 0.68, 0.7]} radius={0.09} castShadow receiveShadow>
+          <meshStandardMaterial color="#8C6A4A" roughness={0.95} />
+        </SoftBox>
+        <SoftBox position={[0, 0.7, 0]} args={[0.8, 0.07, 0.8]} radius={0.03} receiveShadow castShadow>
+          <meshStandardMaterial color={room.accent} roughness={0.85} />
+        </SoftBox>
+        <group ref={body} position={[0, 0.72, 0]}>
+          <Model accent={room.accent} />
+        </group>
       </group>
       {nearby && (
         <group ref={marker}>

@@ -29,9 +29,9 @@ const PRESETS: Preset[] = [
   {
     key: "morning",
     keyColor: "#FFE3B8",
-    keyIntensity: 1.25,
+    keyIntensity: 1.7,
     keyPos: [-7, 7, -5],
-    ambient: 0.40,
+    ambient: 0.32,
     hemi: 0.28,
     door: 0.75,
     sky: "#FFE0B2",
@@ -42,9 +42,9 @@ const PRESETS: Preset[] = [
   {
     key: "midday",
     keyColor: "#FFF1D6",
-    keyIntensity: 1.75,
+    keyIntensity: 2.15,
     keyPos: [1, 12, -2],
-    ambient: 0.52,
+    ambient: 0.34,
     hemi: 0.36,
     door: 0.5,
     sky: "#FFF6DE",
@@ -55,8 +55,8 @@ const PRESETS: Preset[] = [
   {
     key: "afternoon",
     keyColor: "#FFD8A0",
-    keyIntensity: 1.5,
-    keyPos: [6, 9, -4],
+    keyIntensity: 2.1,
+    keyPos: [7, 6.5, -5],
     ambient: 0.42,
     hemi: 0.3,
     door: 0.9,
@@ -68,9 +68,9 @@ const PRESETS: Preset[] = [
   {
     key: "evening",
     keyColor: "#F2A96B",
-    keyIntensity: 0.85,
+    keyIntensity: 1.25,
     keyPos: [9, 4, 1],
-    ambient: 0.26,
+    ambient: 0.22,
     hemi: 0.18,
     door: 1.35,
     sky: "#B8603C",
@@ -190,11 +190,15 @@ export function DaylightRig() {
       <hemisphereLight ref={hemi} intensity={0.3} color="#FFF0D8" groundColor="#8A6440" />
       <directionalLight
         ref={key}
-        position={[6, 9, -4]}
-        intensity={1.5}
+        position={[7, 6.5, -5]}
+        intensity={2.1}
         color="#FFD8A0"
         castShadow
         shadow-mapSize={[2048, 2048]}
+        shadow-radius={6}
+        shadow-blurSamples={12}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.035}
         shadow-camera-left={-14}
         shadow-camera-right={14}
         shadow-camera-top={14}
