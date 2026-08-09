@@ -794,48 +794,35 @@ function World({
       group.current.rotation.z = idleAmt * Math.sin(t * 0.9) * 0.02;
     }
 
-    // ---- 3. camera placement
+    // ---- 3. camera placement (elevated diorama rig)
     {
-      const ideal = new THREE.Vector2(
-        player.current.x - fwd.x * CAM_DIST,
-        player.current.y - fwd.y * CAM_DIST,
-      );
-      // obstruction test uses the character's own collider radius, so the
-      // camera is stopped by exactly the surfaces the character is
-      const t = cameraClearance(player.current, ideal);
-      const dist = CAM_DIST * t;
-      // damp the boom length so wall pull-ins ease instead of popping
-      camDist.current = THREE.MathUtils.damp(camDist.current, dist, 8, delta);
-      // clamp: never let the boom lag further than a small margin behind target
-      camDist.current = THREE.MathUtils.clamp(camDist.current, Math.min(dist, 1.6), CAM_DIST);
+      // The rig sits above the ceiling plane, so hallway walls can never come
+      // between the camera and the character: no boom pull-in is needed and
+      // the framing stays consistent through doorway transitions.
+      camDist.current = THREE.MathUtils.damp(camDist.current, CAM_DIST, 4, delta);
 
       const desired = new THREE.Vector3(
         player.current.x - fwd.x * camDist.current,
-        1.5 + (CAM_HEIGHT - 1.5) * (camDist.current / CAM_DIST),
+        CAM_HEIGHT,
         player.current.y - fwd.y * camDist.current,
       );
-      // relaxed, floaty follow rather than a snappy chase
-      cam.current.position.lerp(desired, 1 - Math.pow(0.02, delta));
-      // hard clamp: the camera may never sit further out than the clear boom
-      // length, otherwise follow-lag drags it through a wall
+      // very relaxed, floaty follow — observational, not a chase cam
+      cam.current.position.lerp(desired, 1 - Math.pow(0.06, delta));
+      // keep the character comfortably framed even during heavy lag
       const planar = new THREE.Vector2(
         cam.current.position.x - player.current.x,
         cam.current.position.z - player.current.y,
       );
-      const maxPlanar = Math.min(CAM_DIST + 0.4, Math.max(dist, 1.2));
-      if (planar.length() > maxPlanar) {
-        planar.setLength(maxPlanar);
+      if (planar.length() > CAM_DIST * 1.35) {
+        planar.setLength(CAM_DIST * 1.35);
         cam.current.position.x = player.current.x + planar.x;
         cam.current.position.z = player.current.y + planar.y;
-        cam.current.position.y = Math.min(
-          cam.current.position.y,
-          1.5 + (CAM_HEIGHT - 1.5) * (maxPlanar / CAM_DIST),
-        );
       }
       // look target depends only on the character's position
       lookAt.current.set(player.current.x, 1.15, player.current.y);
       cam.current.lookAt(lookAt.current);
     }
+
 
 
 
