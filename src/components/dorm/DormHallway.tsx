@@ -709,7 +709,7 @@ function World({
     let dYaw = targetYaw - camYaw.current;
     while (dYaw > Math.PI) dYaw -= Math.PI * 2;
     while (dYaw < -Math.PI) dYaw += Math.PI * 2;
-    camYaw.current += dYaw * (1 - Math.pow(0.02, delta));
+    camYaw.current += dYaw * (1 - Math.pow(0.25, delta));
 
     // camera-relative basis on the XZ plane (y deliberately zeroed: the rig
     // looks slightly downward, and that pitch must not bleed into movement)
