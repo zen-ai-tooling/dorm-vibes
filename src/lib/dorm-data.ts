@@ -145,6 +145,7 @@ export const ROOMS: Room[] = [
       variant: "dog",
     },
     door: { owner: "Jordan", stickers: ["note", "paw", "heart"], isActive: false },
+    decor: { wallpaper: "stripes", wallpaperColor: "#5A3186", posters: ["rave", "gig"] },
   },
 ];
 
