@@ -32,6 +32,25 @@ export type DoorConfig = {
   isActive: boolean;
 };
 
+/** Wallpaper patterns that have a generator in RoomDecor.tsx */
+export type WallpaperId = "plain" | "stripes" | "dots" | "grid" | "arches";
+
+/** Poster graphics that have a generator in RoomDecor.tsx */
+export type PosterId = "gig" | "vinyl" | "cosmos" | "sunset" | "botanic" | "rave";
+
+/**
+ * Swappable room decor. Purely identifiers + placement hints so a future
+ * customization/purchase feature can write new values into this object
+ * (or into a user record shaped like it) without touching components.
+ */
+export type Decor = {
+  wallpaper: WallpaperId;
+  /** wallpaper tint; falls back to the room accent when omitted */
+  wallpaperColor?: string;
+  /** 1-3 posters, rendered by mapping over this list */
+  posters: PosterId[];
+};
+
 export type Room = {
   id: string;
   name: string;
