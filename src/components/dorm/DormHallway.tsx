@@ -117,8 +117,12 @@ function resolveCollisions(pos: THREE.Vector2, radius = PLAYER_R) {
   }
 }
 
-/** Shortest travel fraction from `from` toward `to` before hitting a wall (2D). */
-function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.28) {
+/**
+ * Shortest travel fraction from `from` toward `to` before hitting a wall (2D).
+ * `pad` matches the character's own collider radius so the camera is blocked by
+ * exactly the same surfaces the character is.
+ */
+function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = PLAYER_R) {
   const dx = to.x - from.x;
   const dz = to.y - from.y;
   let best = 1;
@@ -151,8 +155,9 @@ function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.28) {
     }
     if (t0 <= t1 && t0 >= 0 && t0 < best) best = t0;
   }
-  return Math.max(best * 0.92, 0.62);
+  return THREE.MathUtils.clamp(best * 0.96, 0.24, 1);
 }
+
 
 function useKeys() {
   const keys = useRef<Record<string, boolean>>({});
