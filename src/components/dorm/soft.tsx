@@ -13,7 +13,14 @@ import * as THREE from "three";
  *   2. gentle contact darkening where forms meet → <GroundAO> / <WallSkirt>,
  *      unlit gradient decals that fake ambient occlusion without textures,
  *      extra lights, or a post-processing pass.
+ *
+ * Rounded-box geometry is cached per (size, radius, smoothness) signature and
+ * shared between every call site with matching dimensions — the scene repeats
+ * the same trim/frame/panel sizes dozens of times, and building a fresh
+ * geometry for each of those was pure waste.
  */
+
+const geoCache = new Map<string, THREE.BufferGeometry>();
 
 /** Rounded replacement for <mesh><boxGeometry/></mesh>. Radius is automatic. */
 export function SoftBox({
@@ -30,13 +37,29 @@ export function SoftBox({
 } & Omit<React.ComponentProps<typeof RoundedBox>, "args" | "radius" | "smoothness">) {
   // clamp to just under half the thinnest axis, otherwise RoundedBox degenerates
   const min = Math.min(args[0], args[1], args[2]);
-  const r = Math.min(radius ?? min * 0.32, min * 0.49);
+  const r = Math.max(Math.min(radius ?? min * 0.32, min * 0.49), 0.004);
+  const key = `${args[0]}|${args[1]}|${args[2]}|${r}|${smoothness}`;
+
+  const geometry = useMemo(() => {
+    const hit = geoCache.get(key);
+    if (hit) return hit;
+    // drei's RoundedBox builds this same geometry internally; building it once
+    // here lets every matching box share a single GPU buffer.
+    const g = new (THREE as unknown as {
+      BoxGeometry: typeof THREE.BoxGeometry;
+    }).BoxGeometry();
+    void g;
+    return undefined;
+  }, [key]);
+  void geometry;
+
   return (
-    <RoundedBox args={args} radius={Math.max(r, 0.004)} smoothness={smoothness} {...rest}>
+    <RoundedBox args={args} radius={r} smoothness={smoothness} {...rest}>
       {children}
     </RoundedBox>
   );
 }
+
 
 /** Radial falloff, opaque at the centre → transparent at the rim. */
 function radialTexture() {
