@@ -27,7 +27,14 @@ import { DoorStickers, NowPlayingPulse } from "./DoorDecor";
 import { RoomMood } from "./RoomMood";
 
 
-type Box = { cx: number; cz: number; sx: number; sz: number };
+type Box = {
+  cx: number;
+  cz: number;
+  sx: number;
+  sz: number;
+  /** which box face points away from any interior space, if any */
+  out?: "+x" | "-x" | "+z" | "-z";
+};
 
 const HALF = HALL_W / 2;
 const WALL_CX = HALF + WALL_T / 2;
@@ -74,7 +81,16 @@ function buildWalls(): Box[] {
       (r) => [r.z - DOOR_W / 2, r.z + DOOR_W / 2] as [number, number],
     );
     for (const [a, b] of splitRun(HALL_START, HALL_END, gaps)) {
-      walls.push({ cx: sign * WALL_CX, cz: (a + b) / 2, sx: WALL_T, sz: b - a });
+      walls.push({
+        cx: sign * WALL_CX,
+        cz: (a + b) / 2,
+        sx: WALL_T,
+        sz: b - a,
+        // hallway runs only show an exterior face where no room sits behind
+        ...(ROOMS.some((r) => sideSign(r.side) === sign && Math.abs(r.z - (a + b) / 2) < ROOM_SIZE / 2)
+          ? {}
+          : { out: sign > 0 ? ("+x" as const) : ("-x" as const) }),
+      });
     }
   }
   // hallway back wall
@@ -83,13 +99,20 @@ function buildWalls(): Box[] {
     cz: HALL_START - WALL_T / 2,
     sx: HALL_W + WALL_T * 2,
     sz: WALL_T,
+    out: "-z",
   });
 
   // room shells
   for (const room of ROOMS) {
     const sign = sideSign(room.side);
     const outerX = sign * (HALF + WALL_T + ROOM_SIZE + WALL_T / 2);
-    walls.push({ cx: outerX, cz: room.z, sx: WALL_T, sz: ROOM_SIZE + WALL_T * 2 });
+    walls.push({
+      cx: outerX,
+      cz: room.z,
+      sx: WALL_T,
+      sz: ROOM_SIZE + WALL_T * 2,
+      out: sign > 0 ? "+x" : "-x",
+    });
     const cx = roomCenterX(room.side);
     for (const dz of [-1, 1]) {
       // side walls run the full depth so they interpenetrate (rather than
@@ -99,6 +122,7 @@ function buildWalls(): Box[] {
         cz: room.z + dz * (ROOM_SIZE / 2 + WALL_T / 2),
         sx: ROOM_SIZE + WALL_T * 2,
         sz: WALL_T,
+        out: dz > 0 ? "+z" : "-z",
       });
     }
 
@@ -314,19 +338,61 @@ function useKeys() {
  * distance. Palette is jewel-toned (plum / deep teal / amber) rather than
  * flat primaries. Segment counts stay low: the camera never gets close.
  */
-function Character({ groupRef }: { groupRef: React.RefObject<THREE.Group | null> }) {
-  const SKIN = "#D9A277";
-  const HAIR = "#2B1B33"; // near-black plum
-  const TOP = "#5B2A50"; // plum
-  const SLEEVE = "#7A3A63";
-  const LEGS = "#1E4A4E"; // deep teal
-  const SHOE = "#4A1F2A"; // burgundy
+/** Swappable hair piece — variant + color are props so a future customization
+ *  UI can change them without touching the head mesh. */
+type HairStyle = "bob" | "crop" | "bun";
+
+function Hair({ style = "bob", color = "#241428" }: { style?: HairStyle; color?: string }) {
+  return (
+    <group>
+      {/* cap shell shared by every style */}
+      <mesh position={[0, 1.6, -0.02]} scale={[1.04, 0.9, 1.02]} castShadow>
+        <sphereGeometry args={[0.34, 18, 14]} />
+        <meshStandardMaterial color={color} roughness={0.95} />
+      </mesh>
+      {style === "bob" && (
+        <mesh position={[0, 1.42, -0.16]} scale={[1, 0.8, 1]}>
+          <sphereGeometry args={[0.3, 14, 12]} />
+          <meshStandardMaterial color={color} roughness={0.95} />
+        </mesh>
+      )}
+      {style === "bun" && (
+        <mesh position={[0, 1.82, -0.16]} castShadow>
+          <sphereGeometry args={[0.14, 12, 10]} />
+          <meshStandardMaterial color={color} roughness={0.95} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+/**
+ * Soft, iconic character: capsule/sphere blob shapes only — no cube edges —
+ * with a larger head-to-body ratio so the silhouette reads at diorama
+ * distance. Palette is jewel-toned (deep plum / emerald / berry). Face detail
+ * stays iconic: two eyes, brows, blush and a small smile.
+ */
+function Character({
+  groupRef,
+  hairStyle = "bob",
+  hairColor = "#2A1420",
+}: {
+  groupRef: React.RefObject<THREE.Group | null>;
+  hairStyle?: HairStyle;
+  hairColor?: string;
+}) {
+  const SKIN = "#C98C60";
+  const TOP = "#4A1E42"; // deep plum
+  const SLEEVE = "#612A52";
+  const LEGS = "#12403F"; // deep emerald-teal
+  const SHOE = "#3A1420"; // berry
+  const EYE = "#1B1016";
   return (
     <group ref={groupRef}>
       {/* contact shadow — keeps the character grounded at distance */}
       <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={2}>
         <circleGeometry args={[0.44, 20]} />
-        <meshBasicMaterial color="#2A1A12" transparent opacity={0.3} depthWrite={false} />
+        <meshBasicMaterial color="#241009" transparent opacity={0.34} depthWrite={false} />
       </mesh>
 
       {/* legs */}
@@ -362,22 +428,33 @@ function Character({ groupRef }: { groupRef: React.RefObject<THREE.Group | null>
         <sphereGeometry args={[0.33, 18, 14]} />
         <meshStandardMaterial color={SKIN} roughness={0.9} />
       </mesh>
-      {/* hair cap */}
-      <mesh position={[0, 1.6, -0.02]} scale={[1.04, 0.9, 1.02]} castShadow>
-        <sphereGeometry args={[0.34, 18, 14]} />
-        <meshStandardMaterial color={HAIR} roughness={0.95} />
-      </mesh>
-      <mesh position={[0, 1.42, -0.16]} scale={[1, 0.8, 1]}>
-        <sphereGeometry args={[0.3, 14, 12]} />
-        <meshStandardMaterial color={HAIR} roughness={0.95} />
-      </mesh>
-      {/* eyes — two dots, the only detail that needs to read at distance */}
-      {[-0.11, 0.11].map((x) => (
-        <mesh key={x} position={[x, 1.55, 0.29]}>
-          <sphereGeometry args={[0.038, 10, 8]} />
-          <meshStandardMaterial color="#241820" />
-        </mesh>
+
+      <Hair style={hairStyle} color={hairColor} />
+
+      {/* face — bold and simple so it still reads from the diorama camera */}
+      {[-0.115, 0.115].map((x) => (
+        <group key={x}>
+          <mesh position={[x, 1.545, 0.285]} scale={[1, 1.15, 0.6]}>
+            <sphereGeometry args={[0.045, 12, 10]} />
+            <meshStandardMaterial color={EYE} roughness={0.5} />
+          </mesh>
+          {/* brow */}
+          <mesh position={[x, 1.635, 0.278]} rotation={[0, 0, Math.sign(x) * 0.12]}>
+            <boxGeometry args={[0.085, 0.017, 0.02]} />
+            <meshStandardMaterial color={hairColor} roughness={0.9} />
+          </mesh>
+          {/* blush */}
+          <mesh position={[x * 1.55, 1.475, 0.245]} scale={[1.3, 0.8, 0.3]}>
+            <sphereGeometry args={[0.05, 10, 8]} />
+            <meshStandardMaterial color="#B85B62" roughness={1} transparent opacity={0.55} />
+          </mesh>
+        </group>
       ))}
+      {/* smile */}
+      <mesh position={[0, 1.455, 0.292]} rotation={[0, 0, Math.PI]}>
+        <torusGeometry args={[0.05, 0.012, 6, 12, Math.PI]} />
+        <meshStandardMaterial color="#5B2733" roughness={0.8} />
+      </mesh>
     </group>
   );
 }
@@ -405,19 +482,40 @@ function Structure() {
           <meshStandardMaterial color={COLORS.floorDark} />
         </mesh>
       ))}
-      {/* walls */}
+      {/* walls — interior faces use the plaster tone, the outward-facing skin
+          and the top of every run get a finished neutral exterior tone so the
+          diorama camera never sees raw blockout geometry */}
       {WALLS.flatMap((w, i) =>
         wallPanels(w).map((p, j) => (
-        <mesh key={`${i}-${j}`} position={[p.cx, p.cy, p.cz]} castShadow receiveShadow>
-          <boxGeometry args={[p.sx, p.sy, p.sz]} />
-          {/* DoubleSide, not BackSide: with BackSide the near wall face was
-              culled, so it wrote no depth and room furniture bled through the
-              wall and fought with the far face */}
-          <meshStandardMaterial color={COLORS.wall} side={THREE.DoubleSide} />
-
-        </mesh>
+          <group key={`${i}-${j}`}>
+            <mesh position={[p.cx, p.cy, p.cz]} castShadow receiveShadow>
+              <boxGeometry args={[p.sx, p.sy, p.sz]} />
+              {/* DoubleSide, not BackSide: with BackSide the near wall face was
+                  culled, so it wrote no depth and room furniture bled through the
+                  wall and fought with the far face. Faces are addressed
+                  individually so the outward skin can carry a finished
+                  exterior tone instead of raw interior plaster. */}
+              {(["+x", "-x", "+y", "-y", "+z", "-z"] as const).map((face, m) => (
+                <meshStandardMaterial
+                  key={face}
+                  attach={`material-${m}`}
+                  color={face === w.out ? COLORS.wallOuter : COLORS.wall}
+                  roughness={face === w.out ? 0.95 : 0.85}
+                  side={THREE.DoubleSide}
+                />
+              ))}
+            </mesh>
+            {/* cap: closes the open-looking top edge of full-height runs */}
+            {p.cy + p.sy / 2 > HALL_H - 0.05 && (
+              <mesh position={[p.cx, HALL_H + 0.04, p.cz]} receiveShadow>
+                <boxGeometry args={[p.sx + 0.1, 0.09, p.sz + 0.1]} />
+                <meshStandardMaterial color={COLORS.wallOuter} roughness={0.95} />
+              </mesh>
+            )}
+          </group>
         )),
       )}
+
       <HallwayWindows />
       {/* baseboard trim along hallway */}
       {[-1, 1].map((s) => (

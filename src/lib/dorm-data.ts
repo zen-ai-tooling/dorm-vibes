@@ -49,7 +49,7 @@ export const ROOMS: Room[] = [
   {
     id: "you",
     name: "Your Room",
-    accent: "#4A9B8E",
+    accent: "#1E7A69",
     z: 5,
     side: "left",
     songs: [
@@ -75,7 +75,7 @@ export const ROOMS: Room[] = [
   {
     id: "sam",
     name: "Sam's Room",
-    accent: "#E07A5F",
+    accent: "#B24A2E",
     z: 10,
     side: "right",
     songs: [
@@ -101,7 +101,7 @@ export const ROOMS: Room[] = [
   {
     id: "jordan",
     name: "Jordan's Room",
-    accent: "#9B6BC7",
+    accent: "#6B3B9E",
     z: 15,
     side: "left",
     songs: [
@@ -138,11 +138,12 @@ export const HALL_END = 30;
 export const ROOM_SIZE = 5;
 
 export const COLORS = {
-  wall: "#F2E8D5",
+  wall: "#E6D6BC",
   floor: "#B8875A",
   floorDark: "#A8794E",
-  trim: "#5C4433",
-  ceiling: "#EFE2CB",
+  trim: "#4E3626",
+  ceiling: "#E2D2B8",
+  wallOuter: "#CBB79A",
   fog: "#E4CFA8",
 };
 

@@ -4,7 +4,10 @@ import * as THREE from "three";
 import { ROOM_SIZE, roomCenterX, sideSign, type Room } from "@/lib/dorm-data";
 import { deriveMood } from "@/lib/room-mood";
 
-const SPREAD = ROOM_SIZE - 1.2;
+const SPREAD = ROOM_SIZE - 1.6;
+/** particles stay inside a calm band between head height and the ceiling */
+const BAND_LOW = 1.5;
+const BAND_H = 1.1;
 const dummy = new THREE.Object3D();
 
 /**
@@ -24,10 +27,12 @@ export function RoomMood({ room }: { room: Room }) {
     () =>
       Array.from({ length: mood.particleCount }, () => ({
         x: (Math.random() - 0.5) * SPREAD,
-        y: 0.35 + Math.random() * 2.1,
+        // constrained band: head-height up to just below the ceiling, so the
+        // motes read as calm atmosphere rather than debris scattered anywhere
+        y: BAND_LOW + Math.random() * BAND_H,
         z: (Math.random() - 0.5) * SPREAD,
         phase: Math.random() * Math.PI * 2,
-        amp: 0.15 + Math.random() * 0.35,
+        amp: 0.1 + Math.random() * 0.18,
         scale: 0.6 + Math.random() * 0.8,
       })),
     [mood.particleCount],
@@ -53,12 +58,12 @@ export function RoomMood({ room }: { room: Room }) {
       let y = s.y;
       let scale = 0.028 * s.scale;
       if (mood.particle === "motes") {
-        y = 0.35 + ((s.y - 0.35 + drift * 0.25) % 2.1);
+        y = BAND_LOW + ((s.y - BAND_LOW + drift * 0.2) % BAND_H);
       } else if (mood.particle === "sparkles") {
-        y = s.y + Math.sin(drift + s.phase) * s.amp * 0.5;
+        y = s.y + Math.sin(drift + s.phase) * s.amp * 0.35;
         scale *= 0.85 + 0.35 * Math.sin(drift * 2 + s.phase);
       } else {
-        y = s.y + Math.sin(drift + s.phase) * s.amp * 0.3;
+        y = s.y + Math.sin(drift + s.phase) * s.amp * 0.22;
         scale *= 0.7 + beat * 0.9;
       }
       dummy.position.set(
@@ -93,7 +98,7 @@ export function RoomMood({ room }: { room: Room }) {
         <meshBasicMaterial
           color={mood.particleColor}
           transparent
-          opacity={0.45}
+          opacity={0.38}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
         />
