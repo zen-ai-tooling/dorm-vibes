@@ -99,15 +99,15 @@ export function wallPanels(w: {
 
 /** Frame + sky panel + floor light patch for one window. */
 function HallWindow({ spec }: { spec: WindowSpec }) {
-  const sky = useRef<THREE.MeshStandardMaterial>(null);
+  const sky = useRef<THREE.MeshBasicMaterial>(null);
   const shaft = useRef<THREE.MeshBasicMaterial>(null);
   const glow = useRef<THREE.PointLight>(null);
 
   useFrame(() => {
     if (sky.current) {
-      sky.current.color.copy(daylightState.skyColor);
-      sky.current.emissive.copy(daylightState.skyColor);
-      sky.current.emissiveIntensity = daylightState.skyEmissive;
+      sky.current.color
+        .copy(daylightState.skyColor)
+        .multiplyScalar(0.55 + daylightState.skyEmissive * 0.7);
     }
     if (shaft.current) {
       shaft.current.color.copy(daylightState.shaftColor);
@@ -132,28 +132,28 @@ function HallWindow({ spec }: { spec: WindowSpec }) {
           coplanar with the wall surface */}
       <mesh position={[x, WIN_SILL + 0.03, spec.z]} castShadow>
         <boxGeometry args={[0.18, 0.12, WIN_W + 0.2]} />
-        <meshStandardMaterial color="#00FF00" />
+        <meshStandardMaterial color={COLORS.trim} />
       </mesh>
       <mesh position={[x, WIN_TOP - 0.03, spec.z]}>
         <boxGeometry args={[0.16, 0.1, WIN_W + 0.2]} />
-        <meshStandardMaterial color="#00FF00" />
+        <meshStandardMaterial color={COLORS.trim} />
       </mesh>
       {[-1, 1].map((dz) => (
         <mesh key={dz} position={[x, cy, spec.z + dz * (WIN_W / 2 - 0.03)]}>
           <boxGeometry args={[0.16, h, 0.1]} />
-          <meshStandardMaterial color="#00FF00" />
+          <meshStandardMaterial color={COLORS.trim} />
         </mesh>
       ))}
       {/* muntin */}
       <mesh position={[x, cy, spec.z]}>
         <boxGeometry args={[0.1, h, 0.07]} />
-        <meshStandardMaterial color="#00FF00" />
+        <meshStandardMaterial color={COLORS.trim} />
       </mesh>
 
       {/* sky panel just outside the opening */}
       <mesh position={[sign * (HALF + WALL_T + 0.4), cy + 0.05, spec.z]} rotation={[0, sign * -Math.PI / 2, 0]}>
-        <boxGeometry args={[6, 6, 0.2]} />
-        <meshBasicMaterial color="#FF0000" side={THREE.DoubleSide} />
+        <planeGeometry args={[WIN_W * 3.2, h * 3.2]} />
+        <meshBasicMaterial ref={sky} color="#F5A860" toneMapped={false} side={THREE.DoubleSide} fog={false} />
       </mesh>
 
       {/* warm patch of daylight on the hallway floor */}
