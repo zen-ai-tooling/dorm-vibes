@@ -25,6 +25,7 @@ import { LockedDoor } from "./LockedDoor";
 import { Companion } from "./Companion";
 import { DoorStickers, NowPlayingPulse } from "./DoorDecor";
 import { RoomMood } from "./RoomMood";
+import { PERF } from "@/lib/perf-flags";
 import { RoomDecor } from "./RoomDecor";
 import { Speaker } from "./Speaker";
 import { SoftBox, GroundAO, WallSkirt, jitter } from "./soft";
@@ -701,7 +702,7 @@ function RoomShell({ room }: { room: Room }) {
       <RoomDecor room={room} />
 
       {/* data-derived mood atmosphere (tint fill + batched particles) */}
-      <RoomMood room={room} />
+      {PERF.mood && <RoomMood room={room} />}
     </group>
   );
 }
@@ -998,7 +999,7 @@ function World({
     }
 
     // ---- 3. camera placement: diorama in the hallway, intimate inside a room
-    {
+    if (PERF.camera) {
       // short, deliberate lean-in/out rather than an instant cut
       const step = delta / CAM_BLEND_SECONDS;
       roomBlend.current = THREE.MathUtils.clamp(
@@ -1179,6 +1180,30 @@ function Panel({ accent, title, children }: { accent: string; title: string; chi
   );
 }
 
+
+/** TEMPORARY diagnostic probe */
+function PerfProbe() {
+  const { gl, scene } = useThree();
+  useFrame(() => {
+    let meshes = 0, lights = 0;
+    scene.traverse((o) => {
+      const a = o as THREE.Mesh & THREE.Light;
+      if ((a as THREE.Mesh).isMesh) meshes++;
+      if ((a as THREE.Light).isLight && (a as THREE.Light).visible) lights++;
+    });
+    (window as unknown as Record<string, unknown>)['__perf'] = {
+      calls: gl.info.render.calls,
+      tris: gl.info.render.triangles,
+      programs: gl.info.programs?.length ?? 0,
+      geometries: gl.info.memory.geometries,
+      textures: gl.info.memory.textures,
+      meshes,
+      lights,
+    };
+  });
+  return null;
+}
+
 export default function DormHallway() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const active = useMemo(() => INTERACTIVES.find((i) => i.key === activeKey) ?? null, [activeKey]);
@@ -1186,12 +1211,13 @@ export default function DormHallway() {
   return (
     <div className="relative h-screen w-full overflow-hidden">
       <Canvas
-        shadows="soft"
+        shadows={PERF.shadows ? "soft" : false}
         dpr={[1, 1.5]}
         gl={{ antialias: true }}
         camera={{ fov: 52, near: 0.5, far: 140, position: [0, 10, -8.5] }}
       >
         <World onNearby={() => {}} onActive={setActiveKey} />
+        <PerfProbe />
       </Canvas>
 
       <div className="pointer-events-none absolute left-6 top-6 select-none">
