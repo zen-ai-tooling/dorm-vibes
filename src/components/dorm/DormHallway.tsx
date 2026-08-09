@@ -322,22 +322,24 @@ function DoorFrame({ room }: { room: Room }) {
   const x = sign * WALL_CX;
   return (
     <group>
-      {/* lintel above the doorway */}
+      {/* lintel above the doorway — overlaps the neighbouring wall runs by a
+          few cm so their end caps are never coplanar with it */}
       <mesh position={[x, (DOOR_H + HALL_H) / 2, room.z]}>
-        <boxGeometry args={[WALL_T, HALL_H - DOOR_H, DOOR_W]} />
+        <boxGeometry args={[WALL_T, HALL_H - DOOR_H, DOOR_W + 0.08]} />
         <meshStandardMaterial color={COLORS.wall} />
       </mesh>
-      {/* accent frame */}
+      {/* accent frame, sunk into the wall run rather than butted against it */}
       {[-1, 1].map((dz) => (
-        <mesh key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.06)]}>
+        <mesh key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.02)]}>
           <boxGeometry args={[WALL_T + 0.04, DOOR_H, 0.12]} />
           <meshStandardMaterial color={room.accent} />
         </mesh>
       ))}
-      <mesh position={[x, DOOR_H + 0.06, room.z]}>
-        <boxGeometry args={[WALL_T + 0.04, 0.12, DOOR_W + 0.24]} />
+      <mesh position={[x, DOOR_H + 0.05, room.z]}>
+        <boxGeometry args={[WALL_T + 0.04, 0.14, DOOR_W + 0.24]} />
         <meshStandardMaterial color={room.accent} />
       </mesh>
+
       {/* open door panel swung into the room */}
       <mesh
         position={[sign * (HALF + WALL_T + 0.35), DOOR_H / 2, room.z + DOOR_W / 2 + 0.6]}
