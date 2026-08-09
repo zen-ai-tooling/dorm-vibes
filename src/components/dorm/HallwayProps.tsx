@@ -178,15 +178,52 @@ export function LostAndFound() {
  */
 export function StringLights() {
   const ref = useRef<THREE.Group>(null);
-  const bulbs: { z: number; x: number; y: number; i: number }[] = [];
-  const step = 1.25;
-  const count = Math.floor((HALL_END - HALL_START - 1) / step);
-  for (let i = 0; i < count; i++) {
-    const z = HALL_START + 0.8 + i * step;
-    const side = i % 2 === 0 ? -1 : 1;
-    const sag = 0.06 + (i % 2) * 0.05;
-    bulbs.push({ z, x: side * 0.5, y: HALL_H - 0.16 - sag, i });
+
+  // Anchor points along the ceiling; the wire sags between them like a real
+  // strand drooping under its own weight (catenary-ish cosh curve).
+  const SPAN = 5;
+  const SAG = 0.42;
+  const anchorY = HALL_H - 0.12;
+  const spans = Math.max(1, Math.floor((HALL_END - HALL_START - 1.6) / SPAN));
+  const z0 = HALL_START + 0.8;
+
+  /** normalized 0..1 across a span → downward droop */
+  const droop = (u: number) => {
+    const k = 2.2;
+    return (SAG * (Math.cosh(k * (u - 0.5)) - Math.cosh(k * 0.5))) / (1 - Math.cosh(k * 0.5));
+  };
+
+  const SEGS = 18;
+  const wire: { p: THREE.Vector3; len: number; pitch: number }[] = [];
+  const bulbs: { x: number; y: number; z: number; i: number }[] = [];
+  let bulbIndex = 0;
+
+  for (let s = 0; s < spans; s++) {
+    const za = z0 + s * SPAN;
+    const x = s % 2 === 0 ? -0.35 : 0.35;
+    const xn = (s + 1) % 2 === 0 ? -0.35 : 0.35;
+    const pt = (u: number) =>
+      new THREE.Vector3(
+        THREE.MathUtils.lerp(x, xn, u),
+        anchorY - droop(u),
+        za + u * SPAN,
+      );
+    for (let i = 0; i < SEGS; i++) {
+      const a = pt(i / SEGS);
+      const b = pt((i + 1) / SEGS);
+      const mid = a.clone().lerp(b, 0.5);
+      const len = a.distanceTo(b);
+      wire.push({ p: mid, len, pitch: Math.atan2(b.y - a.y, Math.hypot(b.x - a.x, b.z - a.z)) });
+    }
+    // evenly spaced bulbs hanging just under the sag
+    const perSpan = 5;
+    for (let i = 1; i <= perSpan; i++) {
+      const u = i / (perSpan + 1);
+      const p = pt(u);
+      bulbs.push({ x: p.x, y: p.y - 0.09, z: p.z, i: bulbIndex++ });
+    }
   }
+
   useFrame(({ clock }) => {
     if (!ref.current) return;
     const t = clock.elapsedTime;
@@ -194,23 +231,23 @@ export function StringLights() {
       const mesh = child as THREE.Mesh;
       const mat = mesh.material as THREE.MeshStandardMaterial | undefined;
       if (mat && "emissiveIntensity" in mat) {
-        mat.emissiveIntensity = 1.1 + Math.sin(t * 1.6 + i * 0.7) * 0.35;
+        mat.emissiveIntensity = 1.0 + Math.sin(t * 1.2 + i * 0.6) * 0.22;
       }
     });
   });
+
   return (
     <group>
-      {/* the wire: thin dark segments zig-zagging between bulbs */}
-      {bulbs.slice(0, -1).map((b, i) => {
-        const n = bulbs[i + 1]!;
-        const mx = (b.x + n.x) / 2;
-        const my = (b.y + n.y) / 2 + 0.06;
-        const mz = (b.z + n.z) / 2;
-        const len = Math.hypot(n.x - b.x, n.z - b.z);
-        const yaw = Math.atan2(n.x - b.x, n.z - b.z);
+      {/* the wire: many short smooth segments tracing the sagging curve */}
+      {wire.map((w, i) => {
+        const yaw = Math.atan2(
+          // orient along the span direction (mostly +z)
+          0,
+          1,
+        );
         return (
-          <mesh key={`w${i}`} position={[mx, my, mz]} rotation={[0, yaw, 0]}>
-            <boxGeometry args={[0.02, 0.02, len]} />
+          <mesh key={`w${i}`} position={[w.p.x, w.p.y, w.p.z]} rotation={[-w.pitch, yaw, 0]}>
+            <boxGeometry args={[0.015, 0.015, w.len + 0.01]} />
             <meshStandardMaterial color="#6B5340" />
           </mesh>
         );
@@ -218,21 +255,41 @@ export function StringLights() {
       <group ref={ref}>
         {bulbs.map((b) => (
           <mesh key={b.i} position={[b.x, b.y, b.z]}>
-            <octahedronGeometry args={[0.075, 0]} />
-            <meshStandardMaterial color="#FFF1CE" emissive="#FFC169" emissiveIntensity={1.2} />
+            <sphereGeometry args={[0.062, 12, 10]} />
+            <meshStandardMaterial
+              color="#FFF3D6"
+              emissive="#FFC169"
+              emissiveIntensity={1.1}
+              roughness={0.5}
+              toneMapped={false}
+            />
           </mesh>
         ))}
       </group>
+      {/* soft halo shells so the bulbs read as emitting, not solid ornaments */}
+      {bulbs.map((b) => (
+        <mesh key={`h${b.i}`} position={[b.x, b.y, b.z]}>
+          <sphereGeometry args={[0.14, 10, 8]} />
+          <meshBasicMaterial
+            color="#FFCE95"
+            transparent
+            opacity={0.18}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
       {/* a few sparse, very soft pools so the strand reads as light-emitting
           without competing with the door lamps */}
       {bulbs
-        .filter((_, i) => i % 6 === 2)
+        .filter((_, i) => i % 5 === 2)
         .map((b) => (
           <pointLight
             key={`l${b.i}`}
             position={[b.x, b.y - 0.15, b.z]}
             color="#FFCE95"
-            intensity={1.6}
+            intensity={1.5}
             distance={4}
             decay={2}
           />
@@ -240,6 +297,7 @@ export function StringLights() {
     </group>
   );
 }
+
 
 export function HallwayDressing() {
   return (
