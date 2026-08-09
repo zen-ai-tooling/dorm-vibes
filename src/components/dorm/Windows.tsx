@@ -146,11 +146,17 @@ function HallWindow({ spec }: { spec: WindowSpec }) {
           <meshStandardMaterial color={COLORS.trim} />
         </mesh>
       ))}
-      {/* muntin */}
+      {/* mullions — one vertical + two horizontal dividers make a 2x3 grid */}
       <mesh position={[x, cy, spec.z]}>
-        <boxGeometry args={[0.1, h, 0.07]} />
+        <boxGeometry args={[0.1, h, 0.06]} />
         <meshStandardMaterial color={COLORS.trim} />
       </mesh>
+      {[-1, 1].map((dy) => (
+        <mesh key={`m${dy}`} position={[x, cy + dy * (h / 6), spec.z]}>
+          <boxGeometry args={[0.1, 0.05, WIN_W - 0.06]} />
+          <meshStandardMaterial color={COLORS.trim} />
+        </mesh>
+      ))}
 
       {/* glass pane — cool, light and translucent so the sky reads through */}
       <mesh position={[sign * (HALF + WALL_T / 2), cy, spec.z]} rotation={[0, sign * -Math.PI / 2, 0]}>
@@ -159,7 +165,7 @@ function HallWindow({ spec }: { spec: WindowSpec }) {
           ref={glass}
           color="#D7ECF5"
           transparent
-          opacity={0.22}
+          opacity={0.2}
           roughness={0.08}
           metalness={0}
           transmission={0.6}
@@ -168,11 +174,66 @@ function HallWindow({ spec }: { spec: WindowSpec }) {
         />
       </mesh>
 
+      {/* soft diagonal reflection streak across the glass */}
+      <mesh
+        position={[sign * (HALF + WALL_T / 2 - sign * 0.01), cy, spec.z]}
+        rotation={[0, sign * -Math.PI / 2, 0.62]}
+      >
+        <planeGeometry args={[WIN_W * 0.32, h * 1.8]} />
+        <meshBasicMaterial
+          color="#FFFFFF"
+          transparent
+          opacity={0.09}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+          fog={false}
+        />
+      </mesh>
+
+      {/* distant low-poly rooftops + soft clouds, seen through the glass */}
+      <group position={[sign * (HALF + WALL_T + 0.045), 0, spec.z]}>
+        {[-0.55, -0.2, 0.15, 0.5].map((dz, i) => (
+          <mesh key={`r${i}`} position={[0, WIN_SILL + 0.14 + (i % 2 ? 0.1 : 0), dz]}>
+            <planeGeometry args={[0.34, 0.28 + (i % 2 ? 0.12 : 0)]} />
+            <meshBasicMaterial color="#7A5A50" toneMapped={false} fog={false} side={THREE.DoubleSide} />
+          </mesh>
+        ))}
+        {[
+          [-0.4, WIN_TOP - 0.22, 0.42],
+          [0.35, WIN_TOP - 0.34, 0.3],
+        ].map((c, i) => (
+          <mesh key={`c${i}`} position={[0, c[1]!, c[0]!]} rotation={[0, sign * -Math.PI / 2, 0]}>
+            <circleGeometry args={[c[2]! * 0.5, 10]} />
+            <meshBasicMaterial
+              color="#FFF3E2"
+              transparent
+              opacity={0.55}
+              toneMapped={false}
+              fog={false}
+            />
+          </mesh>
+        ))}
+      </group>
+
       {/* sky panel just outside the opening */}
       <mesh position={[sign * (HALF + WALL_T + 0.06), cy + 0.05, spec.z]} rotation={[0, sign * -Math.PI / 2, 0]}>
         <planeGeometry args={[WIN_W * 3.2, h * 3.2]} />
         <meshBasicMaterial ref={sky} color="#F5A860" toneMapped={false} side={THREE.DoubleSide} fog={false} />
       </mesh>
+
+      {/* cozy detail: a tiny potted plant on the sill */}
+      <group position={[x - sign * 0.02, WIN_SILL + 0.09, spec.z + WIN_W / 2 - 0.3]}>
+        <mesh castShadow>
+          <cylinderGeometry args={[0.06, 0.05, 0.1, 8]} />
+          <meshStandardMaterial color="#C0714F" />
+        </mesh>
+        <mesh position={[0, 0.11, 0]} castShadow>
+          <icosahedronGeometry args={[0.09, 0]} />
+          <meshStandardMaterial color="#5E8C5A" flatShading />
+        </mesh>
+      </group>
+
 
 
       {/* warm patch of daylight on the hallway floor */}
