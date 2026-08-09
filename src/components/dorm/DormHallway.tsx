@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo, useEffect, type ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Html, RoundedBox } from "@react-three/drei";
+import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import {
   ROOMS,
@@ -559,7 +559,7 @@ function Structure() {
           wall/floor crevice so the corner reads as a crease, not a seam */}
       {[-1, 1].map((s) => (
         <group key={s}>
-          <RoundedBox
+          <SoftBox
             position={[s * (HALF - 0.02), 0.14, (HALL_START + HALL_END) / 2]}
             args={[0.09, 0.3, HALL_END - HALL_START]}
             radius={0.042}
@@ -567,7 +567,7 @@ function Structure() {
             castShadow
           >
             <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
-          </RoundedBox>
+          </SoftBox>
           <WallSkirt
             position={[s * (HALF - 0.1), 0.3, (HALL_START + HALL_END) / 2]}
             rotation={[0, (s * Math.PI) / 2, 0]}
@@ -618,14 +618,14 @@ function RoomShell({ room }: { room: Room }) {
           coplanar with the wall surface behind it */}
       {[-1, 1].map((dz) => (
         <group key={dz}>
-          <RoundedBox
+          <SoftBox
             position={[cx, 1.05, room.z + dz * (ROOM_SIZE / 2 - 0.02)]}
             args={[ROOM_SIZE - 0.02, 0.11, 0.08]}
             radius={0.038}
             smoothness={1}
           >
             <meshStandardMaterial color={room.accent} roughness={0.9} />
-          </RoundedBox>
+          </SoftBox>
           {/* crevice shading where this wall meets the room floor */}
           <WallSkirt
             position={[cx, 0.3, room.z + dz * (ROOM_SIZE / 2 - 0.06)]}
@@ -643,9 +643,9 @@ function RoomShell({ room }: { room: Room }) {
           />
         </group>
       ))}
-      <RoundedBox position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.02), 1.05, room.z]} args={[0.08, 0.11, ROOM_SIZE - 0.02]} radius={0.038} smoothness={1}>
+      <SoftBox position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.02), 1.05, room.z]} args={[0.08, 0.11, ROOM_SIZE - 0.02]} radius={0.038} smoothness={1}>
         <meshStandardMaterial color={room.accent} roughness={0.9} />
-      </RoundedBox>
+      </SoftBox>
       <WallSkirt
         position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.06), 0.3, room.z]}
         rotation={[0, (-sign * Math.PI) / 2, 0]}
@@ -665,12 +665,12 @@ function RoomShell({ room }: { room: Room }) {
           hand-arranged rather than snapped to a lattice */}
       <group position={[cx + sign * 1.5, 0, room.z + 1.4]} rotation={[0, jitter(`bed-${room.id}`, 0.05), 0]}>
         <GroundAO size={2.1} depth={2.9} opacity={0.5} />
-        <RoundedBox position={[0, 0.28, 0]} castShadow args={[1.1, 0.45, 2]} radius={0.2} smoothness={1}>
+        <SoftBox position={[0, 0.28, 0]} castShadow args={[1.1, 0.45, 2]} radius={0.2} smoothness={1}>
           <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
-        </RoundedBox>
-        <RoundedBox position={[0, 0.58, 0]} castShadow args={[1.05, 0.2, 1.9]} radius={0.095} smoothness={1}>
+        </SoftBox>
+        <SoftBox position={[0, 0.58, 0]} castShadow args={[1.05, 0.2, 1.9]} radius={0.095} smoothness={1}>
           <meshStandardMaterial color={room.accent} roughness={0.9} />
-        </RoundedBox>
+        </SoftBox>
         {/* pillow */}
         <mesh position={[0, 0.68, -0.72]} scale={[1.5, 0.55, 0.9]} castShadow>
           <sphereGeometry args={[0.3, 14, 10]} />
@@ -686,9 +686,9 @@ function RoomShell({ room }: { room: Room }) {
       {/* desk */}
       <group position={[cx - sign * 1.8, 0, room.z + 1.9]} rotation={[0, jitter(`desk-${room.id}`, 0.06), 0]}>
         <GroundAO size={1.7} depth={1.1} opacity={0.44} />
-        <RoundedBox position={[0, 0.75, 0]} castShadow args={[1.4, 0.12, 0.7]} radius={0.055} smoothness={1}>
+        <SoftBox position={[0, 0.75, 0]} castShadow args={[1.4, 0.12, 0.7]} radius={0.055} smoothness={1}>
           <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
-        </RoundedBox>
+        </SoftBox>
         {[-1, 1].map((sx) => (
           <mesh key={sx} position={[sx * 0.6, 0.37, 0]} castShadow>
             <capsuleGeometry args={[0.045, 0.6, 2, 8]} />
@@ -722,26 +722,26 @@ function DoorFrame({ room }: { room: Room }) {
       </SoftBox>
       {/* accent frame, sunk into the wall run rather than butted against it */}
       {[-1, 1].map((dz) => (
-        <RoundedBox key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.02)]} args={[WALL_T + 0.05, DOOR_H, 0.14]} radius={0.062} smoothness={1}>
+        <SoftBox key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.02)]} args={[WALL_T + 0.05, DOOR_H, 0.14]} radius={0.062} smoothness={1}>
 <meshStandardMaterial color={room.accent} />
-</RoundedBox>
+</SoftBox>
       ))}
-      <RoundedBox position={[x, DOOR_H + 0.05, room.z]} args={[WALL_T + 0.05, 0.16, DOOR_W + 0.24]} radius={0.072} smoothness={1}>
+      <SoftBox position={[x, DOOR_H + 0.05, room.z]} args={[WALL_T + 0.05, 0.16, DOOR_W + 0.24]} radius={0.072} smoothness={1}>
 <meshStandardMaterial color={room.accent} />
-</RoundedBox>
+</SoftBox>
 
       {/* open door panel swung into the room */}
-      <RoundedBox
+      <SoftBox
         position={[sign * (HALF + WALL_T + 0.35), DOOR_H / 2, room.z + DOOR_W / 2 + 0.6]}
         rotation={[0, sign * 0.9, 0]}
         castShadow
        args={[0.11, DOOR_H, DOOR_W]} radius={0.052} smoothness={1}>
 <meshStandardMaterial color={COLORS.trim} />
-</RoundedBox>
+</SoftBox>
       {/* warm light above the door */}
-      <RoundedBox position={[sign * (HALF - 0.12), 2.55, room.z]} args={[0.17, 0.23, 0.5]} radius={0.105} smoothness={1}>
+      <SoftBox position={[sign * (HALF - 0.12), 2.55, room.z]} args={[0.17, 0.23, 0.5]} radius={0.105} smoothness={1}>
 <meshStandardMaterial color="#FFE6B0" emissive="#FFC773" emissiveIntensity={1.2} />
-</RoundedBox>
+</SoftBox>
       <DoorLight position={[sign * (HALF - 0.4), 2.4, room.z]} />
 
       {/* "now playing" presence pulse, driven by room.door.isActive */}
@@ -791,18 +791,18 @@ function BulletinBoard({ item, nearby }: { item: Interactive; nearby: boolean })
   });
   return (
     <group position={[item.x, 0, item.z]} rotation={[0, sign === -1 ? Math.PI / 2 : -Math.PI / 2, 0]}>
-      <RoundedBox position={[0, 1.55, 0]} castShadow args={[1.8, 1.2, 0.12]} radius={0.055} smoothness={1}>
+      <SoftBox position={[0, 1.55, 0]} castShadow args={[1.8, 1.2, 0.12]} radius={0.055} smoothness={1}>
         <meshStandardMaterial color={item.room.accent} roughness={0.9} />
-      </RoundedBox>
-      <RoundedBox position={[0, 1.55, 0.07]} args={[1.62, 1.02, 0.04]} radius={0.018} smoothness={1}>
+      </SoftBox>
+      <SoftBox position={[0, 1.55, 0.07]} args={[1.62, 1.02, 0.04]} radius={0.018} smoothness={1}>
         <meshStandardMaterial color="#C9A57A" roughness={1} />
-      </RoundedBox>
+      </SoftBox>
       {[
         [-0.5, 1.75],
         [0.15, 1.85],
         [0.55, 1.4],
       ].map((pt, i) => (
-        <RoundedBox
+        <SoftBox
           key={i}
           position={[pt[0]!, pt[1]!, 0.11]}
           rotation={[0, 0, i * 0.15 - 0.15 + jitter(`pin${i}`, 0.07)]}
@@ -811,7 +811,7 @@ function BulletinBoard({ item, nearby }: { item: Interactive; nearby: boolean })
           smoothness={1}
         >
           <meshStandardMaterial color={i === 2 ? "#F2E8D5" : "#FBF6EA"} roughness={1} />
-        </RoundedBox>
+        </SoftBox>
       ))}
       {nearby && (
         <group ref={ref}>
