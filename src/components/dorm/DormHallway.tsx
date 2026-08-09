@@ -22,6 +22,8 @@ import { DormAudio } from "@/lib/dorm-audio";
 import { DaylightRig, DoorLight } from "./Daylight";
 import { HallwayWindows, wallPanels } from "./Windows";
 import { LockedDoor } from "./LockedDoor";
+import { Companion } from "./Companion";
+import { DoorStickers, NowPlayingPulse } from "./DoorDecor";
 
 
 type Box = { cx: number; cz: number; sx: number; sz: number };
@@ -91,7 +93,7 @@ const WALLS = buildWalls();
 type Interactive = {
   key: string;
   room: Room;
-  kind: "speaker" | "board";
+  kind: "speaker" | "board" | "companion";
   x: number;
   z: number;
 };
@@ -108,6 +110,13 @@ function buildInteractives(): Interactive[] {
         kind: "board" as const,
         x: sign * (HALF + WALL_T + ROOM_SIZE - 0.55),
         z: room.z + 1.1,
+      },
+      {
+        key: `${room.id}-companion`,
+        room,
+        kind: "companion" as const,
+        x: cx + sign * 1.7,
+        z: room.z - 1.7,
       },
     ];
   });
@@ -377,6 +386,24 @@ function DoorFrame({ room }: { room: Room }) {
       </mesh>
       <DoorLight position={[sign * (HALF - 0.4), 2.4, room.z]} />
 
+      {/* "now playing" presence pulse, driven by room.door.isActive */}
+      <group position={[sign * (HALF - 0.16), 1.9, room.z + DOOR_W / 2 + 0.22]}>
+        <NowPlayingPulse active={room.door.isActive} accent={room.accent} />
+      </group>
+
+      {/* sticker collage on both faces of the open door panel */}
+      {[1, -1].map((face) => (
+        <group
+          key={face}
+          position={[sign * (HALF + WALL_T + 0.35), DOOR_H / 2, room.z + DOOR_W / 2 + 0.6]}
+          rotation={[0, sign * 0.9, 0]}
+        >
+          <group position={[face * 0.055, 0.25, 0]} rotation={[0, (face * Math.PI) / 2, 0]}>
+            <DoorStickers stickers={room.door.stickers} />
+          </group>
+        </group>
+      ))}
+
       {/* name plaque */}
       <Html
         position={[sign * (HALF - 0.05), 2.05, room.z]}
@@ -386,6 +413,12 @@ function DoorFrame({ room }: { room: Room }) {
       >
         <div className="dorm-plaque" style={{ borderColor: room.accent }}>
           {room.name}
+          <span className="dorm-plaque-owner">
+            {room.door.isActive && (
+              <i className="dorm-live-dot" style={{ background: room.accent }} />
+            )}
+            {room.door.owner}
+          </span>
         </div>
       </Html>
     </group>
@@ -676,8 +709,16 @@ function World({
       {INTERACTIVES.map((item) =>
         item.kind === "speaker" ? (
           <Speaker key={item.key} item={item} nearby={nearby.includes(item.key)} />
-        ) : (
+        ) : item.kind === "board" ? (
           <BulletinBoard key={item.key} item={item} nearby={nearby.includes(item.key)} />
+        ) : (
+          <Companion
+            key={item.key}
+            room={item.room}
+            x={item.x}
+            z={item.z}
+            nearby={nearby.includes(item.key)}
+          />
         ),
       )}
       <Character groupRef={group} />
@@ -730,6 +771,23 @@ export default function DormHallway() {
                 </li>
               ))}
             </ol>
+          </Panel>
+        </div>
+      )}
+
+      {active && active.kind === "companion" && (
+        <div className="dorm-overlay">
+          <Panel
+            accent={active.room.accent}
+            title={`${active.room.name} — ${active.room.companion.type === "pet" ? "Pet" : "Plant"}`}
+          >
+            <div className="dorm-companion">
+              <span className="dorm-companion-name">{active.room.companion.name}</span>
+              <span className="dorm-companion-blurb">{active.room.companion.blurb}</span>
+              <em className="dorm-tag" style={{ background: active.room.accent }}>
+                {active.room.companion.variant}
+              </em>
+            </div>
           </Panel>
         </div>
       )}
