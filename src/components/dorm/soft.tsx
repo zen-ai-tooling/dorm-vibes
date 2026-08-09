@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import * as THREE from "three";
 import { toCreasedNormals } from "three-stdlib";
-import { getBasic } from "./materials";
+import { getBasic, MatPrimitive } from "./materials";
 
 /**
  * Shape + shadow treatment shared across the scene.
