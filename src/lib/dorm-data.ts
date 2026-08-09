@@ -32,6 +32,25 @@ export type DoorConfig = {
   isActive: boolean;
 };
 
+/** Wallpaper patterns that have a generator in RoomDecor.tsx */
+export type WallpaperId = "plain" | "stripes" | "dots" | "grid" | "arches";
+
+/** Poster graphics that have a generator in RoomDecor.tsx */
+export type PosterId = "gig" | "vinyl" | "cosmos" | "sunset" | "botanic" | "rave";
+
+/**
+ * Swappable room decor. Purely identifiers + placement hints so a future
+ * customization/purchase feature can write new values into this object
+ * (or into a user record shaped like it) without touching components.
+ */
+export type Decor = {
+  wallpaper: WallpaperId;
+  /** wallpaper tint; falls back to the room accent when omitted */
+  wallpaperColor?: string;
+  /** 1-3 posters, rendered by mapping over this list */
+  posters: PosterId[];
+};
+
 export type Room = {
   id: string;
   name: string;
@@ -43,6 +62,7 @@ export type Room = {
   bulletin: BulletinItem[];
   companion: Companion;
   door: DoorConfig;
+  decor: Decor;
 };
 
 export const ROOMS: Room[] = [
@@ -71,6 +91,7 @@ export const ROOMS: Room[] = [
       variant: "succulent",
     },
     door: { owner: "You", stickers: ["note", "star"], isActive: true },
+    decor: { wallpaper: "dots", wallpaperColor: "#2F6F62", posters: ["vinyl", "sunset"] },
   },
   {
     id: "sam",
@@ -97,6 +118,7 @@ export const ROOMS: Room[] = [
       variant: "cat",
     },
     door: { owner: "Sam", stickers: ["planet", "star", "leaf"], isActive: false },
+    decor: { wallpaper: "arches", wallpaperColor: "#8A4630", posters: ["cosmos", "botanic"] },
   },
   {
     id: "jordan",
@@ -123,6 +145,7 @@ export const ROOMS: Room[] = [
       variant: "dog",
     },
     door: { owner: "Jordan", stickers: ["note", "paw", "heart"], isActive: false },
+    decor: { wallpaper: "stripes", wallpaperColor: "#5A3186", posters: ["rave", "gig"] },
   },
 ];
 
