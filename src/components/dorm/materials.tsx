@@ -78,14 +78,18 @@ export function getBasic(raw: Props): THREE.MeshBasicMaterial {
   return m;
 }
 
-/** Drop-in for <meshStandardMaterial> when the material is never mutated. */
-export function Std(props: Props) {
-  return <primitive object={getStd(props)} attach="material" />;
+/**
+ * Drop-in for <meshStandardMaterial> when the material is never mutated.
+ * `attach` (e.g. "material-2" for a per-face slot) is a scene-graph concern,
+ * not part of the material's identity, so it is kept out of the cache key.
+ */
+export function Std({ attach = "material", ...props }: Props & { attach?: string }) {
+  return <primitive object={getStd(props)} attach={attach} />;
 }
 
 /** Drop-in for <meshBasicMaterial> when the material is never mutated. */
-export function Basic(props: Props) {
-  return <primitive object={getBasic(props)} attach="material" />;
+export function Basic({ attach = "material", ...props }: Props & { attach?: string }) {
+  return <primitive object={getBasic(props)} attach={attach} />;
 }
 
 export function materialStats() {

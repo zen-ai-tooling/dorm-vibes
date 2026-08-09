@@ -533,7 +533,7 @@ function Structure() {
                   individually so the outward skin can carry a finished
                   exterior tone instead of raw interior plaster. */}
               {(["+x", "-x", "+y", "-y", "+z", "-z"] as const).map((face, m) => (
-                <meshStandardMaterial
+                <Std
                   key={face}
                   attach={`material-${m}`}
                   color={face === w.out ? COLORS.wallOuter : COLORS.wall}
