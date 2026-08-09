@@ -60,7 +60,6 @@ export function StaticMerge({ children }: { children: ReactNode }) {
     });
 
     const created: THREE.Mesh[] = [];
-    let tot=0; root.traverse(o=>{if((o as any).isMesh) tot++}); console.log('[merge] src meshes', tot, 'buckets', buckets.size, 'merged', [...buckets.values()].filter(b=>b.geos.length>1).reduce((a,b)=>a+b.geos.length,0));
     for (const [mat, b] of buckets) {
       if (b.geos.length < 2) continue;
       let merged: THREE.BufferGeometry | null = null;
