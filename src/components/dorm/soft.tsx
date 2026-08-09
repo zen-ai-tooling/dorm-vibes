@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import * as THREE from "three";
 import { toCreasedNormals } from "three-stdlib";
-import { getBasic } from "./materials";
+import { getBasic, MatPrimitive } from "./materials";
 
 /**
  * Shape + shadow treatment shared across the scene.
@@ -160,8 +160,7 @@ export function GroundAO({
       renderOrder={1}
     >
       <planeGeometry args={[size, depth ?? size]} />
-      <primitive
-        attach="material"
+      <MatPrimitive
         object={getBasic({
           map,
           color,
@@ -198,8 +197,7 @@ export function WallSkirt({
   return (
     <mesh position={position} rotation={rotation} renderOrder={1}>
       <planeGeometry args={[width, height]} />
-      <primitive
-        attach="material"
+      <MatPrimitive
         object={getBasic({
           map,
           color,
