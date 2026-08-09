@@ -389,6 +389,10 @@ function Character({
   const EYE = "#1B1016";
   return (
     <group ref={groupRef}>
+      {/* travelling fill light: keeps the character readable at any camera
+          angle (the room rig sits lower than the diorama key light) */}
+      <pointLight position={[0, 2.1, 0.9]} intensity={2.2} distance={4.5} decay={2} color="#FFE0BE" />
+
       {/* contact shadow — keeps the character grounded at distance */}
       <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={2}>
         <circleGeometry args={[0.44, 20]} />
