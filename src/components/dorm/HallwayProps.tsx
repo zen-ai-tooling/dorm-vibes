@@ -176,6 +176,7 @@ export function LostAndFound() {
  * Decorative warm fairy lights strung down the ceiling. Deliberately dim —
  * the door lights and key light still do the real work.
  */
+console.log("[hp] v2 loaded");
 const bulbDummy = new THREE.Object3D();
 const bulbColor = new THREE.Color();
 
