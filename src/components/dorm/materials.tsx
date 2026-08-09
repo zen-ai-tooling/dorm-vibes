@@ -82,15 +82,25 @@ export function getBasic(raw: Props): THREE.MeshBasicMaterial {
  * Drop-in for <meshStandardMaterial> when the material is never mutated.
  * `attach` (e.g. "material-2" for a per-face slot) is a scene-graph concern,
  * not part of the material's identity, so it is kept out of the cache key.
+ *
+ * NOTE: built with createElement, not JSX — the dev source-location transform
+ * injects a `data-tsd-source` prop into JSX elements, and R3F tries to apply
+ * that prop to the three.js material object, which throws.
  */
 export function Std({ attach = "material", ...props }: Props & { attach?: string }) {
-  return <primitive object={getStd(props)} attach={attach} />;
+  return createElement("primitive", { object: getStd(props), attach });
 }
 
 /** Drop-in for <meshBasicMaterial> when the material is never mutated. */
 export function Basic({ attach = "material", ...props }: Props & { attach?: string }) {
-  return <primitive object={getBasic(props)} attach={attach} />;
+  return createElement("primitive", { object: getBasic(props), attach });
 }
+
+/** Attach an already-created material/object without JSX (see note above). */
+export function MatPrimitive({ object, attach = "material" }: { object: unknown; attach?: string }) {
+  return createElement("primitive", { object, attach });
+}
+
 
 export function materialStats() {
   return { std: stdCache.size, basic: basicCache.size };
