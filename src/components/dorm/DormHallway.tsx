@@ -44,8 +44,8 @@ const PLAYER_R = 0.42;
 const CAM_DIST = 8.5;
 const CAM_HEIGHT = 10;
 /** intimate in-room rig: sits over the doorway looking straight into the room */
-const ROOM_CAM_DIST = 5.6;
-const ROOM_CAM_HEIGHT = 3.8;
+const ROOM_CAM_DIST = 6.2;
+const ROOM_CAM_HEIGHT = 4.8;
 /** seconds to blend between hallway and room framing (snappy on purpose) */
 const CAM_BLEND_SECONDS = 0.28;
 
@@ -391,7 +391,7 @@ function Character({
     <group ref={groupRef}>
       {/* travelling fill light: keeps the character readable at any camera
           angle (the room rig sits lower than the diorama key light) */}
-      <pointLight position={[0, 2.1, 0.9]} intensity={2.2} distance={4.5} decay={2} color="#FFE0BE" />
+      <pointLight position={[0, 2.4, 0]} intensity={3.2} distance={5} decay={2} color="#FFE3C4" />
 
       {/* contact shadow — keeps the character grounded at distance */}
       <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={2}>
@@ -933,8 +933,8 @@ function World({
       if (anchorRoom && s > 0.001) {
         const sign = sideSign(anchorRoom.side);
         const cx = sign * (HALF + WALL_T + ROOM_SIZE / 2);
-        focus.x = THREE.MathUtils.lerp(focus.x, cx, s * 0.75);
-        focus.y = THREE.MathUtils.lerp(focus.y, anchorRoom.z, s * 0.75);
+        focus.x = THREE.MathUtils.lerp(focus.x, cx, s * 0.85);
+        focus.y = THREE.MathUtils.lerp(focus.y, anchorRoom.z, s * 0.85);
       }
 
       const desired = new THREE.Vector3(
