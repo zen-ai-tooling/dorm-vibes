@@ -840,11 +840,6 @@ function World({
 
     idleSeconds.current =
       audio.current?.update(moving, player.current.x, player.current.y, delta) ?? 0;
-    (window as unknown as Record<string, unknown>)['__dorm'] = {
-      p: [player.current.x, player.current.y],
-      c: cam.current ? cam.current.position.toArray() : null,
-      path: path.current.length,
-    };
 
     // proximity
     const near: string[] = [];
