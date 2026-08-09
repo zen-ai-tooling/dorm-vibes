@@ -551,6 +551,8 @@ function World({
     };
   }, []);
 
+  if (import.meta.env.DEV) (window as unknown as Record<string, unknown>)["__dormPlayer"] = player;
+
   const nearbyRef = useRef<string>("");
   const activeRef = useRef<string | null>(null);
   const [nearby, setNearby] = useState<string[]>([]);
