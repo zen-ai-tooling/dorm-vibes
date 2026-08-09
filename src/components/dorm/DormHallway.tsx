@@ -30,7 +30,6 @@ import { Speaker } from "./Speaker";
 import { SoftBox, GroundAO, WallSkirt, jitter } from "./soft";
 import { LightCuller } from "./LightCuller";
 import { StaticMerge } from "./batching";
-import { Probe } from "./__probe";
 import { Basic, Std } from "./materials";
 
 
@@ -1098,7 +1097,6 @@ function World({
 
       <DaylightRig />
       <LightCuller />
-      <Probe />
 
 
       {/* invisible ground pick-plane: click/tap anywhere walkable to walk there */}
