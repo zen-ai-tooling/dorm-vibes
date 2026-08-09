@@ -256,7 +256,11 @@ function Structure() {
       {WALLS.map((w, i) => (
         <mesh key={i} position={[w.cx, HALL_H / 2, w.cz]} castShadow receiveShadow>
           <boxGeometry args={[w.sx, HALL_H, w.sz]} />
-          <meshStandardMaterial color={COLORS.wall} side={THREE.BackSide} />
+          {/* DoubleSide, not BackSide: with BackSide the near wall face was
+              culled, so it wrote no depth and room furniture bled through the
+              wall and fought with the far face */}
+          <meshStandardMaterial color={COLORS.wall} side={THREE.DoubleSide} />
+
         </mesh>
       ))}
       {/* baseboard trim along hallway */}
