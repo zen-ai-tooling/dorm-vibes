@@ -132,22 +132,22 @@ function HallWindow({ spec }: { spec: WindowSpec }) {
           coplanar with the wall surface */}
       <mesh position={[x, WIN_SILL + 0.03, spec.z]} castShadow>
         <boxGeometry args={[0.18, 0.12, WIN_W + 0.2]} />
-        <meshStandardMaterial color={COLORS.trim} />
+        <meshStandardMaterial color="#00FF00" />
       </mesh>
       <mesh position={[x, WIN_TOP - 0.03, spec.z]}>
         <boxGeometry args={[0.16, 0.1, WIN_W + 0.2]} />
-        <meshStandardMaterial color={COLORS.trim} />
+        <meshStandardMaterial color="#00FF00" />
       </mesh>
       {[-1, 1].map((dz) => (
         <mesh key={dz} position={[x, cy, spec.z + dz * (WIN_W / 2 - 0.03)]}>
           <boxGeometry args={[0.16, h, 0.1]} />
-          <meshStandardMaterial color={COLORS.trim} />
+          <meshStandardMaterial color="#00FF00" />
         </mesh>
       ))}
       {/* muntin */}
       <mesh position={[x, cy, spec.z]}>
         <boxGeometry args={[0.1, h, 0.07]} />
-        <meshStandardMaterial color={COLORS.trim} />
+        <meshStandardMaterial color="#00FF00" />
       </mesh>
 
       {/* sky panel just outside the opening */}
