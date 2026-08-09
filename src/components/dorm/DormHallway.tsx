@@ -368,13 +368,8 @@ function DoorFrame({ room }: { room: Room }) {
         <boxGeometry args={[0.16, 0.22, 0.5]} />
         <meshStandardMaterial color="#FFE6B0" emissive="#FFC773" emissiveIntensity={1.2} />
       </mesh>
-      <pointLight
-        position={[sign * (HALF - 0.4), 2.4, room.z]}
-        color="#FFCE8A"
-        intensity={7}
-        distance={9}
-        decay={2}
-      />
+      <DoorLight position={[sign * (HALF - 0.4), 2.4, room.z]} />
+
       {/* name plaque */}
       <Html
         position={[sign * (HALF - 0.05), 2.05, room.z]}
