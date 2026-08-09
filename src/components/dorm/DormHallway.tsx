@@ -33,8 +33,9 @@ const HALF = HALL_W / 2;
 const WALL_CX = HALF + WALL_T / 2;
 const PLAYER_R = 0.42;
 /** third-person boom: distance behind and height above the character */
-const CAM_DIST = 7.4;
-const CAM_HEIGHT = 4.2;
+// elevated "diorama" rig: high above the ceiling plane looking down at ~38deg
+const CAM_DIST = 10;
+const CAM_HEIGHT = 9;
 const WALK_SPEED = 3.2;
 
 
