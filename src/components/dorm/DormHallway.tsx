@@ -182,6 +182,130 @@ function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = PLAYER_R)
   return THREE.MathUtils.clamp(best * 0.96, 0.24, 1);
 }
 
+/** true when a straight walk from a→b never enters a wall AABB (padded) */
+function segmentClear(a: THREE.Vector2, b: THREE.Vector2, pad = PLAYER_R * 0.95) {
+  const dx = b.x - a.x;
+  const dz = b.y - a.y;
+  for (const w of WALLS) {
+    const hx = w.sx / 2 + pad;
+    const hz = w.sz / 2 + pad;
+    let t0 = 0;
+    let t1 = 1;
+    for (const [o, d, lo, hi] of [
+      [a.x, dx, w.cx - hx, w.cx + hx],
+      [a.y, dz, w.cz - hz, w.cz + hz],
+    ] as [number, number, number, number][]) {
+      if (Math.abs(d) < 1e-6) {
+        if (o < lo || o > hi) {
+          t0 = 1;
+          t1 = 0;
+          break;
+        }
+        continue;
+      }
+      let ta = (lo - o) / d;
+      let tb = (hi - o) / d;
+      if (ta > tb) [ta, tb] = [tb, ta];
+      t0 = Math.max(t0, ta);
+      t1 = Math.min(t1, tb);
+    }
+    if (t0 <= t1) return false;
+  }
+  return true;
+}
+
+/** static waypoint lattice: hallway spine + each doorway + each room centre */
+const WAYPOINTS: THREE.Vector2[] = (() => {
+  const pts: THREE.Vector2[] = [];
+  for (let z = HALL_START + 1; z <= HALL_END - 1; z += 2) pts.push(new THREE.Vector2(0, z));
+  for (const room of ROOMS) {
+    const sign = sideSign(room.side);
+    pts.push(new THREE.Vector2(0, room.z));
+    pts.push(new THREE.Vector2(sign * (HALF + WALL_T / 2), room.z));
+    pts.push(new THREE.Vector2(sign * (HALF + WALL_T + 0.8), room.z));
+    pts.push(new THREE.Vector2(roomCenterX(room.side), room.z));
+    for (const dz of [-1.5, 1.5])
+      pts.push(new THREE.Vector2(roomCenterX(room.side), room.z + dz));
+  }
+  return pts;
+})();
+
+/** straight line when possible, otherwise a short waypoint route around walls */
+function findPath(from: THREE.Vector2, to: THREE.Vector2): THREE.Vector2[] {
+  if (segmentClear(from, to)) return [to.clone()];
+
+  const nodes = [from, ...WAYPOINTS, to];
+  const n = nodes.length;
+  const goal = n - 1;
+  const dist = new Array<number>(n).fill(Infinity);
+  const prev = new Array<number>(n).fill(-1);
+  const done = new Array<boolean>(n).fill(false);
+  dist[0] = 0;
+
+  for (;;) {
+    let u = -1;
+    for (let i = 0; i < n; i++) if (!done[i] && dist[i]! < (u < 0 ? Infinity : dist[u]!)) u = i;
+    if (u < 0 || u === goal) break;
+    done[u] = true;
+    for (let v = 0; v < n; v++) {
+      if (done[v] || v === u) continue;
+      const a = nodes[u]!;
+      const b = nodes[v]!;
+      const d = a.distanceTo(b);
+      if (d > 9) continue;
+      if (!segmentClear(a, b)) continue;
+      if (dist[u]! + d < dist[v]!) {
+        dist[v] = dist[u]! + d;
+        prev[v] = u;
+      }
+    }
+  }
+
+  if (prev[goal] < 0) return [];
+  const out: THREE.Vector2[] = [];
+  for (let i = goal; i > 0; i = prev[i]!) out.unshift(nodes[i]!.clone());
+  return out;
+}
+
+/** flat ground marker that fades out where the player tapped */
+function MoveMarker({
+  markerRef,
+}: {
+  markerRef: React.RefObject<{ x: number; z: number; born: number } | null>;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const inner = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    const g = group.current;
+    if (!g) return;
+    const m = markerRef.current;
+    if (!m) {
+      g.visible = false;
+      return;
+    }
+    const age = (performance.now() - m.born) / 1000;
+    if (age > 1.1) {
+      g.visible = false;
+      return;
+    }
+    g.visible = true;
+    g.position.set(m.x, 0.035, m.z);
+    const k = 1 - age / 1.1;
+    const s = 0.75 + (1 - k) * 0.5;
+    g.scale.setScalar(s);
+    const mat = inner.current?.material as THREE.MeshBasicMaterial | undefined;
+    if (mat) mat.opacity = k * 0.45;
+  });
+  return (
+    <group ref={group} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+      <mesh ref={inner}>
+        <ringGeometry args={[0.34, 0.46, 32]} />
+        <meshBasicMaterial color="#FFF3DC" transparent opacity={0.45} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
 
 function useKeys() {
   const keys = useRef<Record<string, boolean>>({});
