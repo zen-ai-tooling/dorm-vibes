@@ -21,6 +21,22 @@ type Props = Record<string, unknown>;
 const stdCache = new Map<string, THREE.MeshStandardMaterial>();
 const basicCache = new Map<string, THREE.MeshBasicMaterial>();
 
+/**
+ * Finish values are quantised before they reach the cache: the scene hand-tunes
+ * roughness to 0.85 / 0.9 / 0.95 in places where the difference is invisible,
+ * and collapsing those onto a 0.1 grid lets far more meshes share one material
+ * (and therefore one merged draw call).
+ */
+const QUANTISED = new Set(["roughness", "metalness", "opacity"]);
+
+function normalise(p: Props): Props {
+  const out: Props = {};
+  for (const [k, v] of Object.entries(p)) {
+    out[k] = QUANTISED.has(k) && typeof v === "number" ? Math.round(v * 10) / 10 : v;
+  }
+  return out;
+}
+
 function keyOf(p: Props) {
   return Object.keys(p)
     .sort()
