@@ -33,8 +33,9 @@ const HALF = HALL_W / 2;
 const WALL_CX = HALF + WALL_T / 2;
 const PLAYER_R = 0.42;
 /** third-person boom: distance behind and height above the character */
-const CAM_DIST = 7.4;
-const CAM_HEIGHT = 4.2;
+// elevated "diorama" rig: high above the ceiling plane looking down at ~46deg
+const CAM_DIST = 8.5;
+const CAM_HEIGHT = 10;
 const WALK_SPEED = 3.2;
 
 
@@ -139,47 +140,6 @@ function resolveCollisions(pos: THREE.Vector2, radius = PLAYER_R) {
       else pos.y += Math.sign(dz || 1) * penZ;
     }
   }
-}
-
-/**
- * Shortest travel fraction from `from` toward `to` before hitting a wall (2D).
- * `pad` matches the character's own collider radius so the camera is blocked by
- * exactly the same surfaces the character is.
- */
-function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = PLAYER_R) {
-  const dx = to.x - from.x;
-  const dz = to.y - from.y;
-  let best = 1;
-  for (const w of WALLS) {
-    const hx = w.sx / 2 + pad;
-    const hz = w.sz / 2 + pad;
-    const minX = w.cx - hx;
-    const maxX = w.cx + hx;
-    const minZ = w.cz - hz;
-    const maxZ = w.cz + hz;
-    let t0 = 0;
-    let t1 = 1;
-    for (const [o, d, lo, hi] of [
-      [from.x, dx, minX, maxX],
-      [from.y, dz, minZ, maxZ],
-    ] as [number, number, number, number][]) {
-      if (Math.abs(d) < 1e-6) {
-        if (o < lo || o > hi) {
-          t0 = 1;
-          t1 = 0;
-          break;
-        }
-        continue;
-      }
-      let ta = (lo - o) / d;
-      let tb = (hi - o) / d;
-      if (ta > tb) [ta, tb] = [tb, ta];
-      t0 = Math.max(t0, ta);
-      t1 = Math.min(t1, tb);
-    }
-    if (t0 <= t1 && t0 >= 0 && t0 < best) best = t0;
-  }
-  return THREE.MathUtils.clamp(best * 0.96, 0.24, 1);
 }
 
 /** true when a straight walk from a→b never enters a wall AABB (padded) */
@@ -381,10 +341,12 @@ function Structure() {
         <boxGeometry args={[HALL_W + WALL_T * 2, 0.12, HALL_END - HALL_START]} />
         <meshStandardMaterial color={COLORS.floor} />
       </mesh>
-      <mesh position={[0, HALL_H + 0.06, (HALL_START + HALL_END) / 2]}>
-        <boxGeometry args={[HALL_W + WALL_T * 2, 0.12, HALL_END - HALL_START]} />
+      <mesh
+        position={[0, HALL_H, (HALL_START + HALL_END) / 2]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <planeGeometry args={[HALL_W + WALL_T * 2, HALL_END - HALL_START]} />
         <meshStandardMaterial color={COLORS.ceiling} />
-
       </mesh>
       {/* floor plank seams */}
       {Array.from({ length: Math.floor((HALL_END - HALL_START) / 1.5) }).map((_, i) => (
@@ -431,8 +393,11 @@ function RoomShell({ room }: { room: Room }) {
         <boxGeometry args={[ROOM_SIZE + WALL_T + 0.04, 0.12, ROOM_SIZE + WALL_T * 2]} />
         <meshStandardMaterial color={COLORS.floor} />
       </mesh>
-      <mesh position={[cx + sign * (WALL_T / 2 - 0.02), HALL_H + 0.06, room.z]}>
-        <boxGeometry args={[ROOM_SIZE + WALL_T + 0.04, 0.12, ROOM_SIZE + WALL_T * 2]} />
+      <mesh
+        position={[cx + sign * (WALL_T / 2 - 0.02), HALL_H, room.z]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <planeGeometry args={[ROOM_SIZE + WALL_T + 0.04, ROOM_SIZE + WALL_T * 2]} />
         <meshStandardMaterial color={COLORS.ceiling} />
       </mesh>
 
@@ -793,48 +758,35 @@ function World({
       group.current.rotation.z = idleAmt * Math.sin(t * 0.9) * 0.02;
     }
 
-    // ---- 3. camera placement
+    // ---- 3. camera placement (elevated diorama rig)
     {
-      const ideal = new THREE.Vector2(
-        player.current.x - fwd.x * CAM_DIST,
-        player.current.y - fwd.y * CAM_DIST,
-      );
-      // obstruction test uses the character's own collider radius, so the
-      // camera is stopped by exactly the surfaces the character is
-      const t = cameraClearance(player.current, ideal);
-      const dist = CAM_DIST * t;
-      // damp the boom length so wall pull-ins ease instead of popping
-      camDist.current = THREE.MathUtils.damp(camDist.current, dist, 8, delta);
-      // clamp: never let the boom lag further than a small margin behind target
-      camDist.current = THREE.MathUtils.clamp(camDist.current, Math.min(dist, 1.6), CAM_DIST);
+      // The rig sits above the ceiling plane, so hallway walls can never come
+      // between the camera and the character: no boom pull-in is needed and
+      // the framing stays consistent through doorway transitions.
+      camDist.current = THREE.MathUtils.damp(camDist.current, CAM_DIST, 4, delta);
 
       const desired = new THREE.Vector3(
         player.current.x - fwd.x * camDist.current,
-        1.5 + (CAM_HEIGHT - 1.5) * (camDist.current / CAM_DIST),
+        CAM_HEIGHT,
         player.current.y - fwd.y * camDist.current,
       );
-      // relaxed, floaty follow rather than a snappy chase
-      cam.current.position.lerp(desired, 1 - Math.pow(0.02, delta));
-      // hard clamp: the camera may never sit further out than the clear boom
-      // length, otherwise follow-lag drags it through a wall
+      // very relaxed, floaty follow — observational, not a chase cam
+      cam.current.position.lerp(desired, 1 - Math.pow(0.06, delta));
+      // keep the character comfortably framed even during heavy lag
       const planar = new THREE.Vector2(
         cam.current.position.x - player.current.x,
         cam.current.position.z - player.current.y,
       );
-      const maxPlanar = Math.min(CAM_DIST + 0.4, Math.max(dist, 1.2));
-      if (planar.length() > maxPlanar) {
-        planar.setLength(maxPlanar);
+      if (planar.length() > CAM_DIST * 1.35) {
+        planar.setLength(CAM_DIST * 1.35);
         cam.current.position.x = player.current.x + planar.x;
         cam.current.position.z = player.current.y + planar.y;
-        cam.current.position.y = Math.min(
-          cam.current.position.y,
-          1.5 + (CAM_HEIGHT - 1.5) * (maxPlanar / CAM_DIST),
-        );
       }
       // look target depends only on the character's position
       lookAt.current.set(player.current.x, 1.15, player.current.y);
       cam.current.lookAt(lookAt.current);
     }
+
 
 
 
@@ -957,7 +909,7 @@ export default function DormHallway() {
         shadows
         dpr={[1, 2]}
         gl={{ antialias: true }}
-        camera={{ fov: 58, near: 0.5, far: 90, position: [0, 4.2, -7.4] }}
+        camera={{ fov: 52, near: 0.5, far: 140, position: [0, 10, -8.5] }}
       >
         <World onNearby={() => {}} onActive={setActiveKey} />
       </Canvas>
