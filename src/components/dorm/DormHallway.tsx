@@ -474,6 +474,9 @@ function World({
   const cam = useRef<THREE.Camera>(camera);
   cam.current = camera;
   const lookAt = useRef(new THREE.Vector3(0, 1.2, 2));
+  const camYaw = useRef(0);
+  const camDist = useRef(CAM_DIST);
+
   const nearbyRef = useRef<string>("");
   const activeRef = useRef<string | null>(null);
   const [nearby, setNearby] = useState<string[]>([]);
