@@ -80,7 +80,7 @@ export function DoorLight({
   useEffect(() => {
     const light = ref.current;
     if (!light) return;
-    light.userData.baseIntensity = base;
+    light.userData['baseIntensity'] = base;
     doorLights.add(light);
     return () => {
       doorLights.delete(light);
@@ -136,7 +136,7 @@ export function DaylightRig() {
 
     doorLightState.intensity = THREE.MathUtils.lerp(a.door, b.door, s);
     for (const light of doorLights) {
-      const baseIntensity = (light.userData.baseIntensity as number) ?? 7;
+      const baseIntensity = (light.userData['baseIntensity'] as number) ?? 7;
       light.intensity = baseIntensity * doorLightState.intensity;
     }
   });
