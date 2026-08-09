@@ -723,8 +723,11 @@ function World({
       fwd.x * iz + right.x * ix,
       fwd.y * iz + right.y * ix,
     );
-    const moving = ix !== 0 || iz !== 0;
-    if (moving) {
+    const keyInput = ix !== 0 || iz !== 0;
+    // WASD always wins: pressing a key cancels any in-progress auto-walk
+    if (keyInput) path.current = [];
+    let moving = keyInput;
+    if (keyInput) {
       // normalize first so diagonals aren't faster than cardinals
       move.normalize();
       const dir = move.clone();
