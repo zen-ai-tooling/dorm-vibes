@@ -255,31 +255,33 @@ export function StringLights() {
       <group ref={ref}>
         {bulbs.map((b) => (
           <mesh key={b.i} position={[b.x, b.y, b.z]}>
-            <sphereGeometry args={[0.062, 12, 10]} />
+            <sphereGeometry args={[0.045, 10, 8]} />
             <meshStandardMaterial
               color="#FFF3D6"
               emissive="#FFC169"
-              emissiveIntensity={1.1}
+              emissiveIntensity={1.0}
               roughness={0.5}
               toneMapped={false}
             />
           </mesh>
         ))}
       </group>
-      {/* soft halo shells so the bulbs read as emitting, not solid ornaments */}
+      {/* tight halo shell — barely larger than the bulb, just enough to soften
+          its edge; never large enough to occlude the hallway or character */}
       {bulbs.map((b) => (
-        <mesh key={`h${b.i}`} position={[b.x, b.y, b.z]}>
-          <sphereGeometry args={[0.14, 10, 8]} />
+        <mesh key={`h${b.i}`} position={[b.x, b.y, b.z]} renderOrder={-1}>
+          <sphereGeometry args={[0.062, 8, 6]} />
           <meshBasicMaterial
             color="#FFCE95"
             transparent
-            opacity={0.18}
+            opacity={0.12}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
             toneMapped={false}
           />
         </mesh>
       ))}
+
       {/* a few sparse, very soft pools so the strand reads as light-emitting
           without competing with the door lamps */}
       {bulbs
