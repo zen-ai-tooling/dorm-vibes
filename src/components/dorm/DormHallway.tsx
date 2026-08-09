@@ -405,19 +405,28 @@ function Structure() {
           <meshStandardMaterial color={COLORS.floorDark} />
         </mesh>
       ))}
-      {/* walls */}
+      {/* walls — interior faces use the plaster tone, the outward-facing skin
+          and the top of every run get a finished neutral exterior tone so the
+          diorama camera never sees raw blockout geometry */}
       {WALLS.flatMap((w, i) =>
         wallPanels(w).map((p, j) => (
-        <mesh key={`${i}-${j}`} position={[p.cx, p.cy, p.cz]} castShadow receiveShadow>
-          <boxGeometry args={[p.sx, p.sy, p.sz]} />
-          {/* DoubleSide, not BackSide: with BackSide the near wall face was
-              culled, so it wrote no depth and room furniture bled through the
-              wall and fought with the far face */}
-          <meshStandardMaterial color={COLORS.wall} side={THREE.DoubleSide} />
-
-        </mesh>
+          <group key={`${i}-${j}`}>
+            <mesh position={[p.cx, p.cy, p.cz]} castShadow receiveShadow>
+              <boxGeometry args={[p.sx, p.sy, p.sz]} />
+              {/* DoubleSide, not BackSide: with BackSide the near wall face was
+                  culled, so it wrote no depth and room furniture bled through the
+                  wall and fought with the far face */}
+              <meshStandardMaterial color={COLORS.wall} side={THREE.DoubleSide} />
+            </mesh>
+            {/* cap: closes the open-looking top edge of the run */}
+            <mesh position={[p.cx, p.cy + p.sy / 2 + 0.03, p.cz]} receiveShadow>
+              <boxGeometry args={[p.sx + 0.08, 0.08, p.sz + 0.08]} />
+              <meshStandardMaterial color={COLORS.wallOuter} roughness={0.95} />
+            </mesh>
+          </group>
         )),
       )}
+
       <HallwayWindows />
       {/* baseboard trim along hallway */}
       {[-1, 1].map((s) => (
