@@ -280,3 +280,32 @@
   text-transform: uppercase;
   color: var(--dorm-paper);
 }
+
+/* --- hallway community corkboard notes --- */
+.dorm-corkboard {
+  width: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: inherit;
+}
+.dorm-corknote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fbf6ea;
+  color: #4a3b2e;
+  border: 2px solid #8c6a4a;
+  border-radius: 6px;
+  padding: 5px 7px;
+  font-size: 12px;
+  line-height: 1.25;
+  box-shadow: 2px 3px 0 rgb(74 59 46 / 0.25);
+}
+.dorm-corkflyer {
+  width: 30px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid #8c6a4a;
+}
