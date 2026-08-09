@@ -16,13 +16,14 @@ function C() {
   return (
     <div style={{ height: "100vh" }}>
       <Canvas
-        camera={{ position: [cx + 2.2, 2.4, room.z - 4.6], fov: 60 }}
-        onCreated={({ camera }) => camera.lookAt(cx - 0.6, 1.6, room.z - 1.2)}
+        camera={{ position: [2.6, 1.6, -4.2], fov: 60 }}
       >
         <ambientLight intensity={1.2} />
         <directionalLight position={[4, 6, 2]} intensity={2} />
-        <RoomDecor room={room} />
-        <Speaker room={room} x={cx - 1.5} z={room.z - 1.6} nearby />
+        <group position={[-cx, -1.4, -room.z]}>
+          <RoomDecor room={room} />
+          <Speaker room={room} x={cx - 1.5} z={room.z - 1.6} nearby />
+        </group>
       </Canvas>
     </div>
   );
