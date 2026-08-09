@@ -31,8 +31,8 @@ const PRESETS: Preset[] = [
     keyColor: "#FFE3B8",
     keyIntensity: 1.25,
     keyPos: [-7, 7, -5],
-    ambient: 0.52,
-    hemi: 0.38,
+    ambient: 0.40,
+    hemi: 0.28,
     door: 0.75,
     sky: "#FFE0B2",
     skyEmissive: 0.7,
@@ -44,8 +44,8 @@ const PRESETS: Preset[] = [
     keyColor: "#FFF1D6",
     keyIntensity: 1.75,
     keyPos: [1, 12, -2],
-    ambient: 0.68,
-    hemi: 0.5,
+    ambient: 0.52,
+    hemi: 0.36,
     door: 0.5,
     sky: "#FFF6DE",
     skyEmissive: 1.15,
@@ -57,8 +57,8 @@ const PRESETS: Preset[] = [
     keyColor: "#FFD8A0",
     keyIntensity: 1.5,
     keyPos: [6, 9, -4],
-    ambient: 0.55,
-    hemi: 0.4,
+    ambient: 0.42,
+    hemi: 0.3,
     door: 0.9,
     sky: "#F5A860",
     skyEmissive: 0.95,
@@ -70,8 +70,8 @@ const PRESETS: Preset[] = [
     keyColor: "#F2A96B",
     keyIntensity: 0.85,
     keyPos: [9, 4, 1],
-    ambient: 0.36,
-    hemi: 0.26,
+    ambient: 0.26,
+    hemi: 0.18,
     door: 1.35,
     sky: "#B8603C",
     skyEmissive: 0.45,
@@ -186,8 +186,8 @@ export function DaylightRig() {
 
   return (
     <>
-      <ambientLight ref={ambient} intensity={0.55} color="#FFE9CC" />
-      <hemisphereLight ref={hemi} intensity={0.4} color="#FFF0D8" groundColor="#8A6440" />
+      <ambientLight ref={ambient} intensity={0.42} color="#FFE9CC" />
+      <hemisphereLight ref={hemi} intensity={0.3} color="#FFF0D8" groundColor="#8A6440" />
       <directionalLight
         ref={key}
         position={[6, 9, -4]}
