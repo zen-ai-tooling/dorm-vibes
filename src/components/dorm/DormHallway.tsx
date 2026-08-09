@@ -17,6 +17,8 @@ import {
   roomCenterX,
   type Room,
 } from "@/lib/dorm-data";
+import { HallwayDressing } from "./HallwayProps";
+import { DormAudio } from "@/lib/dorm-audio";
 
 type Box = { cx: number; cz: number; sx: number; sz: number };
 
@@ -489,6 +491,31 @@ function World({
   const camYaw = useRef(0);
   const camDist = useRef(CAM_DIST);
 
+  // --- ambience audio: footsteps, idle cue, muffled music bleeding from doors
+  const audio = useRef<DormAudio | null>(null);
+  if (!audio.current) {
+    audio.current = new DormAudio(
+      ROOMS.map((r) => ({
+        id: r.id,
+        x: sideSign(r.side) * (HALF + 0.1),
+        z: r.z,
+        seed: `${r.songs[0]?.title ?? r.id}-${r.songs[0]?.artist ?? ""}`,
+      })),
+    );
+  }
+  const idleSeconds = useRef(0);
+  useEffect(() => {
+    const a = audio.current;
+    const kick = () => a?.start();
+    window.addEventListener("keydown", kick);
+    window.addEventListener("pointerdown", kick);
+    return () => {
+      window.removeEventListener("keydown", kick);
+      window.removeEventListener("pointerdown", kick);
+      a?.dispose();
+    };
+  }, []);
+
   const nearbyRef = useRef<string>("");
   const activeRef = useRef<string | null>(null);
   const [nearby, setNearby] = useState<string[]>([]);
@@ -556,7 +583,13 @@ function World({
       while (diff < -Math.PI) diff += Math.PI * 2;
       group.current.rotation.y = cur + diff * (1 - Math.pow(0.0005, delta));
       const bob = moving ? Math.abs(Math.sin(performance.now() * 0.012)) * 0.06 : 0;
-      group.current.position.y = bob;
+      // idle animation: after a few seconds standing still the character
+      // settles into a slow breathing sway
+      const idle = idleSeconds.current;
+      const idleAmt = THREE.MathUtils.clamp((idle - 2) / 1.5, 0, 1);
+      const t = performance.now() * 0.001;
+      group.current.position.y = bob + idleAmt * Math.sin(t * 1.6) * 0.02;
+      group.current.rotation.z = idleAmt * Math.sin(t * 0.9) * 0.02;
     }
 
     // ---- 3. camera placement
@@ -596,6 +629,9 @@ function World({
     }
 
 
+
+    idleSeconds.current =
+      audio.current?.update(moving, player.current.x, player.current.y, delta) ?? 0;
 
     // proximity
     const near: string[] = [];
@@ -639,6 +675,7 @@ function World({
       />
 
       <Structure />
+      <HallwayDressing />
       {ROOMS.map((room) => (
         <group key={room.id}>
           <RoomShell room={room} />
