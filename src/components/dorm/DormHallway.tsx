@@ -1,6 +1,6 @@
 import { useRef, useState, useMemo, useEffect, type ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
+import { Html, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import {
   ROOMS,
@@ -293,45 +293,80 @@ function useKeys() {
   return keys;
 }
 
+/**
+ * Soft, iconic character: capsule/sphere blob shapes only — no cube edges —
+ * with a larger head-to-body ratio so the silhouette reads at diorama
+ * distance. Palette is jewel-toned (plum / deep teal / amber) rather than
+ * flat primaries. Segment counts stay low: the camera never gets close.
+ */
 function Character({ groupRef }: { groupRef: React.RefObject<THREE.Group | null> }) {
+  const SKIN = "#D9A277";
+  const HAIR = "#2B1B33"; // near-black plum
+  const TOP = "#5B2A50"; // plum
+  const SLEEVE = "#7A3A63";
+  const LEGS = "#1E4A4E"; // deep teal
+  const SHOE = "#4A1F2A"; // burgundy
   return (
     <group ref={groupRef}>
+      {/* contact shadow — keeps the character grounded at distance */}
+      <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={2}>
+        <circleGeometry args={[0.44, 20]} />
+        <meshBasicMaterial color="#2A1A12" transparent opacity={0.3} depthWrite={false} />
+      </mesh>
+
       {/* legs */}
-      <mesh position={[-0.16, 0.35, 0]} castShadow>
-        <boxGeometry args={[0.24, 0.7, 0.26]} />
-        <meshStandardMaterial color="#3E4C59" />
+      {[-0.14, 0.14].map((x) => (
+        <group key={x}>
+          <mesh position={[x, 0.42, 0]} castShadow>
+            <capsuleGeometry args={[0.11, 0.34, 3, 10]} />
+            <meshStandardMaterial color={LEGS} roughness={0.85} />
+          </mesh>
+          <mesh position={[x, 0.11, 0.03]} castShadow>
+            <sphereGeometry args={[0.13, 12, 10]} />
+            <meshStandardMaterial color={SHOE} roughness={0.8} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* torso — rounded barrel */}
+      <mesh position={[0, 0.96, 0]} scale={[1, 1, 0.72]} castShadow>
+        <capsuleGeometry args={[0.28, 0.34, 4, 14]} />
+        <meshStandardMaterial color={TOP} roughness={0.8} />
       </mesh>
-      <mesh position={[0.16, 0.35, 0]} castShadow>
-        <boxGeometry args={[0.24, 0.7, 0.26]} />
-        <meshStandardMaterial color="#3E4C59" />
-      </mesh>
-      {/* torso */}
-      <mesh position={[0, 1.05, 0]} castShadow>
-        <boxGeometry args={[0.62, 0.72, 0.34]} />
-        <meshStandardMaterial color="#D9784F" />
-      </mesh>
+
       {/* arms */}
-      <mesh position={[-0.42, 1.05, 0]} castShadow>
-        <boxGeometry args={[0.2, 0.66, 0.24]} />
-        <meshStandardMaterial color="#C96A44" />
+      {[-1, 1].map((s) => (
+        <mesh key={s} position={[s * 0.34, 0.98, 0]} rotation={[0, 0, s * 0.12]} castShadow>
+          <capsuleGeometry args={[0.09, 0.32, 3, 10]} />
+          <meshStandardMaterial color={SLEEVE} roughness={0.85} />
+        </mesh>
+      ))}
+
+      {/* head — oversized for a friendly, legible silhouette */}
+      <mesh position={[0, 1.53, 0]} scale={[1, 0.96, 0.94]} castShadow>
+        <sphereGeometry args={[0.33, 18, 14]} />
+        <meshStandardMaterial color={SKIN} roughness={0.9} />
       </mesh>
-      <mesh position={[0.42, 1.05, 0]} castShadow>
-        <boxGeometry args={[0.2, 0.66, 0.24]} />
-        <meshStandardMaterial color="#C96A44" />
+      {/* hair cap */}
+      <mesh position={[0, 1.6, -0.02]} scale={[1.04, 0.9, 1.02]} castShadow>
+        <sphereGeometry args={[0.34, 18, 14]} />
+        <meshStandardMaterial color={HAIR} roughness={0.95} />
       </mesh>
-      {/* head */}
-      <mesh position={[0, 1.63, 0]} castShadow>
-        <boxGeometry args={[0.46, 0.46, 0.44]} />
-        <meshStandardMaterial color="#E8B48C" />
+      <mesh position={[0, 1.42, -0.16]} scale={[1, 0.8, 1]}>
+        <sphereGeometry args={[0.3, 14, 12]} />
+        <meshStandardMaterial color={HAIR} roughness={0.95} />
       </mesh>
-      {/* hair */}
-      <mesh position={[0, 1.85, -0.02]} castShadow>
-        <boxGeometry args={[0.5, 0.16, 0.48]} />
-        <meshStandardMaterial color="#3A2A20" />
-      </mesh>
+      {/* eyes — two dots, the only detail that needs to read at distance */}
+      {[-0.11, 0.11].map((x) => (
+        <mesh key={x} position={[x, 1.55, 0.29]}>
+          <sphereGeometry args={[0.038, 10, 8]} />
+          <meshStandardMaterial color="#241820" />
+        </mesh>
+      ))}
     </group>
   );
 }
+
 
 function Structure() {
   return (
@@ -371,10 +406,9 @@ function Structure() {
       <HallwayWindows />
       {/* baseboard trim along hallway */}
       {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * (HALF - 0.02), 0.14, (HALL_START + HALL_END) / 2]}>
-          <boxGeometry args={[0.06, 0.28, HALL_END - HALL_START]} />
-          <meshStandardMaterial color={COLORS.trim} />
-        </mesh>
+        <RoundedBox key={s} position={[s * (HALF - 0.02), 0.14, (HALL_START + HALL_END) / 2]} args={[0.06, 0.28, HALL_END - HALL_START]} radius={0.025} smoothness={2}>
+<meshStandardMaterial color={COLORS.trim} />
+</RoundedBox>
       ))}
     </group>
   );
@@ -404,25 +438,21 @@ function RoomShell({ room }: { room: Room }) {
       {/* interior accent trim rail — embedded 0.01 into the wall so no face is
           coplanar with the wall surface behind it */}
       {[-1, 1].map((dz) => (
-        <mesh key={dz} position={[cx, 1.05, room.z + dz * (ROOM_SIZE / 2 - 0.02)]}>
-          <boxGeometry args={[ROOM_SIZE - 0.02, 0.1, 0.06]} />
-          <meshStandardMaterial color={room.accent} />
-        </mesh>
+        <RoundedBox key={dz} position={[cx, 1.05, room.z + dz * (ROOM_SIZE / 2 - 0.02)]} args={[ROOM_SIZE - 0.02, 0.1, 0.06]} radius={0.025} smoothness={2}>
+<meshStandardMaterial color={room.accent} />
+</RoundedBox>
       ))}
-      <mesh position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.02), 1.05, room.z]}>
-        <boxGeometry args={[0.06, 0.1, ROOM_SIZE - 0.02]} />
-        <meshStandardMaterial color={room.accent} />
-      </mesh>
+      <RoundedBox position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.02), 1.05, room.z]} args={[0.06, 0.1, ROOM_SIZE - 0.02]} radius={0.025} smoothness={2}>
+<meshStandardMaterial color={room.accent} />
+</RoundedBox>
 
       {/* bed */}
-      <mesh position={[cx + sign * 1.5, 0.28, room.z + 1.4]} castShadow>
-        <boxGeometry args={[1.1, 0.45, 2]} />
-        <meshStandardMaterial color={COLORS.trim} />
-      </mesh>
-      <mesh position={[cx + sign * 1.5, 0.58, room.z + 1.4]} castShadow>
-        <boxGeometry args={[1.05, 0.18, 1.9]} />
-        <meshStandardMaterial color={room.accent} />
-      </mesh>
+      <RoundedBox position={[cx + sign * 1.5, 0.28, room.z + 1.4]} castShadow args={[1.1, 0.45, 2]} radius={0.14} smoothness={2}>
+<meshStandardMaterial color={COLORS.trim} />
+</RoundedBox>
+      <RoundedBox position={[cx + sign * 1.5, 0.58, room.z + 1.4]} castShadow args={[1.05, 0.18, 1.9]} radius={0.08} smoothness={2}>
+<meshStandardMaterial color={room.accent} />
+</RoundedBox>
       {/* rug */}
       <mesh position={[cx, 0.02, room.z - 0.4]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
         <planeGeometry args={[2.2, 1.8]} />
@@ -430,10 +460,9 @@ function RoomShell({ room }: { room: Room }) {
       </mesh>
 
       {/* desk */}
-      <mesh position={[cx - sign * 1.8, 0.75, room.z + 1.9]} castShadow>
-        <boxGeometry args={[1.4, 0.1, 0.7]} />
-        <meshStandardMaterial color={COLORS.trim} />
-      </mesh>
+      <RoundedBox position={[cx - sign * 1.8, 0.75, room.z + 1.9]} castShadow args={[1.4, 0.1, 0.7]} radius={0.04} smoothness={2}>
+<meshStandardMaterial color={COLORS.trim} />
+</RoundedBox>
 
       {/* data-derived mood atmosphere (tint fill + batched particles) */}
       <RoomMood room={room} />
@@ -454,30 +483,26 @@ function DoorFrame({ room }: { room: Room }) {
       </mesh>
       {/* accent frame, sunk into the wall run rather than butted against it */}
       {[-1, 1].map((dz) => (
-        <mesh key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.02)]}>
-          <boxGeometry args={[WALL_T + 0.04, DOOR_H, 0.12]} />
-          <meshStandardMaterial color={room.accent} />
-        </mesh>
+        <RoundedBox key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.02)]} args={[WALL_T + 0.04, DOOR_H, 0.12]} radius={0.05} smoothness={2}>
+<meshStandardMaterial color={room.accent} />
+</RoundedBox>
       ))}
-      <mesh position={[x, DOOR_H + 0.05, room.z]}>
-        <boxGeometry args={[WALL_T + 0.04, 0.14, DOOR_W + 0.24]} />
-        <meshStandardMaterial color={room.accent} />
-      </mesh>
+      <RoundedBox position={[x, DOOR_H + 0.05, room.z]} args={[WALL_T + 0.04, 0.14, DOOR_W + 0.24]} radius={0.06} smoothness={2}>
+<meshStandardMaterial color={room.accent} />
+</RoundedBox>
 
       {/* open door panel swung into the room */}
-      <mesh
+      <RoundedBox
         position={[sign * (HALF + WALL_T + 0.35), DOOR_H / 2, room.z + DOOR_W / 2 + 0.6]}
         rotation={[0, sign * 0.9, 0]}
         castShadow
-      >
-        <boxGeometry args={[0.1, DOOR_H, DOOR_W]} />
-        <meshStandardMaterial color={COLORS.trim} />
-      </mesh>
+       args={[0.1, DOOR_H, DOOR_W]} radius={0.045} smoothness={2}>
+<meshStandardMaterial color={COLORS.trim} />
+</RoundedBox>
       {/* warm light above the door */}
-      <mesh position={[sign * (HALF - 0.12), 2.55, room.z]}>
-        <boxGeometry args={[0.16, 0.22, 0.5]} />
-        <meshStandardMaterial color="#FFE6B0" emissive="#FFC773" emissiveIntensity={1.2} />
-      </mesh>
+      <RoundedBox position={[sign * (HALF - 0.12), 2.55, room.z]} args={[0.16, 0.22, 0.5]} radius={0.07} smoothness={2}>
+<meshStandardMaterial color="#FFE6B0" emissive="#FFC773" emissiveIntensity={1.2} />
+</RoundedBox>
       <DoorLight position={[sign * (HALF - 0.4), 2.4, room.z]} />
 
       {/* "now playing" presence pulse, driven by room.door.isActive */}
@@ -526,10 +551,9 @@ function Speaker({ item, nearby }: { item: Interactive; nearby: boolean }) {
   });
   return (
     <group position={[item.x, 0, item.z]}>
-      <mesh position={[0, 0.55, 0]} castShadow>
-        <boxGeometry args={[0.6, 1.1, 0.55]} />
-        <meshStandardMaterial color={COLORS.trim} />
-      </mesh>
+      <RoundedBox position={[0, 0.55, 0]} castShadow args={[0.6, 1.1, 0.55]} radius={0.1} smoothness={2}>
+<meshStandardMaterial color={COLORS.trim} />
+</RoundedBox>
       <mesh position={[0, 0.75, 0.29]}>
         <cylinderGeometry args={[0.18, 0.18, 0.05, 8]} />
         <meshStandardMaterial color={item.room.accent} />
@@ -567,23 +591,20 @@ function BulletinBoard({ item, nearby }: { item: Interactive; nearby: boolean })
   });
   return (
     <group position={[item.x, 0, item.z]} rotation={[0, sign === -1 ? Math.PI / 2 : -Math.PI / 2, 0]}>
-      <mesh position={[0, 1.55, 0]} castShadow>
-        <boxGeometry args={[1.8, 1.2, 0.1]} />
-        <meshStandardMaterial color={item.room.accent} />
-      </mesh>
-      <mesh position={[0, 1.55, 0.06]}>
-        <boxGeometry args={[1.62, 1.02, 0.04]} />
-        <meshStandardMaterial color="#C9A57A" />
-      </mesh>
+      <RoundedBox position={[0, 1.55, 0]} castShadow args={[1.8, 1.2, 0.1]} radius={0.045} smoothness={2}>
+<meshStandardMaterial color={item.room.accent} />
+</RoundedBox>
+      <RoundedBox position={[0, 1.55, 0.06]} args={[1.62, 1.02, 0.04]} radius={0.018} smoothness={2}>
+<meshStandardMaterial color="#C9A57A" />
+</RoundedBox>
       {[
         [-0.5, 1.75],
         [0.15, 1.85],
         [0.55, 1.4],
       ].map((pt, i) => (
-        <mesh key={i} position={[pt[0]!, pt[1]!, 0.1]} rotation={[0, 0, i * 0.15 - 0.15]}>
-          <boxGeometry args={[0.42, 0.32, 0.02]} />
-          <meshStandardMaterial color={i === 2 ? "#F2E8D5" : "#FBF6EA"} />
-        </mesh>
+        <RoundedBox key={i} position={[pt[0]!, pt[1]!, 0.1]} rotation={[0, 0, i * 0.15 - 0.15]} args={[0.42, 0.32, 0.02]} radius={0.009} smoothness={2}>
+<meshStandardMaterial color={i === 2 ? "#F2E8D5" : "#FBF6EA"} />
+</RoundedBox>
       ))}
       {nearby && (
         <group ref={ref}>
