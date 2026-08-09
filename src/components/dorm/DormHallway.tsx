@@ -23,6 +23,10 @@ type Box = { cx: number; cz: number; sx: number; sz: number };
 const HALF = HALL_W / 2;
 const WALL_CX = HALF + WALL_T / 2;
 const PLAYER_R = 0.42;
+/** third-person boom: distance behind and height above the character */
+const CAM_DIST = 5;
+const CAM_HEIGHT = 2.5;
+
 
 /** Split a wall run along z into segments, skipping doorway gaps. */
 function splitRun(from: number, to: number, gaps: [number, number][]): [number, number][] {
@@ -62,13 +66,16 @@ function buildWalls(): Box[] {
     walls.push({ cx: outerX, cz: room.z, sx: WALL_T, sz: ROOM_SIZE + WALL_T * 2 });
     const cx = roomCenterX(room.side);
     for (const dz of [-1, 1]) {
+      // side walls run the full depth so they interpenetrate (rather than
+      // butt face-to-face against) the hallway wall and the outer room wall
       walls.push({
         cx,
         cz: room.z + dz * (ROOM_SIZE / 2 + WALL_T / 2),
-        sx: ROOM_SIZE,
+        sx: ROOM_SIZE + WALL_T * 2,
         sz: WALL_T,
       });
     }
+
   }
   return walls;
 }
@@ -117,8 +124,12 @@ function resolveCollisions(pos: THREE.Vector2, radius = PLAYER_R) {
   }
 }
 
-/** Shortest travel fraction from `from` toward `to` before hitting a wall (2D). */
-function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.28) {
+/**
+ * Shortest travel fraction from `from` toward `to` before hitting a wall (2D).
+ * `pad` matches the character's own collider radius so the camera is blocked by
+ * exactly the same surfaces the character is.
+ */
+function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = PLAYER_R) {
   const dx = to.x - from.x;
   const dz = to.y - from.y;
   let best = 1;
@@ -151,8 +162,9 @@ function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = 0.28) {
     }
     if (t0 <= t1 && t0 >= 0 && t0 < best) best = t0;
   }
-  return Math.max(best * 0.92, 0.62);
+  return THREE.MathUtils.clamp(best * 0.96, 0.24, 1);
 }
+
 
 function useKeys() {
   const keys = useRef<Record<string, boolean>>({});
@@ -262,25 +274,30 @@ function RoomShell({ room }: { room: Room }) {
   const cx = roomCenterX(room.side);
   return (
     <group>
-      <mesh position={[cx, -0.06, room.z]} receiveShadow>
-        <boxGeometry args={[ROOM_SIZE + WALL_T * 2, 0.12, ROOM_SIZE + WALL_T * 2]} />
+      {/* floor/ceiling slabs butt up against the hallway slab (which already
+          covers up to HALF + WALL_T) instead of overlapping it — overlapping
+          coplanar slabs were the source of the z-fighting at the doorways */}
+      <mesh position={[cx + sign * (WALL_T / 2), -0.06, room.z]} receiveShadow>
+        <boxGeometry args={[ROOM_SIZE + WALL_T, 0.12, ROOM_SIZE + WALL_T * 2]} />
         <meshStandardMaterial color={COLORS.floor} />
       </mesh>
-      <mesh position={[cx, HALL_H + 0.06, room.z]}>
-        <boxGeometry args={[ROOM_SIZE + WALL_T * 2, 0.12, ROOM_SIZE + WALL_T * 2]} />
+      <mesh position={[cx + sign * (WALL_T / 2), HALL_H + 0.06, room.z]}>
+        <boxGeometry args={[ROOM_SIZE + WALL_T, 0.12, ROOM_SIZE + WALL_T * 2]} />
         <meshStandardMaterial color={COLORS.ceiling} side={THREE.BackSide} />
       </mesh>
-      {/* interior accent trim rail */}
+      {/* interior accent trim rail — embedded 0.01 into the wall so no face is
+          coplanar with the wall surface behind it */}
       {[-1, 1].map((dz) => (
-        <mesh key={dz} position={[cx, 1.05, room.z + dz * (ROOM_SIZE / 2 - 0.03)]}>
-          <boxGeometry args={[ROOM_SIZE, 0.1, 0.06]} />
+        <mesh key={dz} position={[cx, 1.05, room.z + dz * (ROOM_SIZE / 2 - 0.02)]}>
+          <boxGeometry args={[ROOM_SIZE - 0.02, 0.1, 0.06]} />
           <meshStandardMaterial color={room.accent} />
         </mesh>
       ))}
-      <mesh position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.03), 1.05, room.z]}>
-        <boxGeometry args={[0.06, 0.1, ROOM_SIZE]} />
+      <mesh position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.02), 1.05, room.z]}>
+        <boxGeometry args={[0.06, 0.1, ROOM_SIZE - 0.02]} />
         <meshStandardMaterial color={room.accent} />
       </mesh>
+
       {/* bed */}
       <mesh position={[cx + sign * 1.5, 0.28, room.z + 1.4]} castShadow>
         <boxGeometry args={[1.1, 0.45, 2]} />
@@ -309,22 +326,24 @@ function DoorFrame({ room }: { room: Room }) {
   const x = sign * WALL_CX;
   return (
     <group>
-      {/* lintel above the doorway */}
+      {/* lintel above the doorway — overlaps the neighbouring wall runs by a
+          few cm so their end caps are never coplanar with it */}
       <mesh position={[x, (DOOR_H + HALL_H) / 2, room.z]}>
-        <boxGeometry args={[WALL_T, HALL_H - DOOR_H, DOOR_W]} />
+        <boxGeometry args={[WALL_T, HALL_H - DOOR_H, DOOR_W + 0.08]} />
         <meshStandardMaterial color={COLORS.wall} />
       </mesh>
-      {/* accent frame */}
+      {/* accent frame, sunk into the wall run rather than butted against it */}
       {[-1, 1].map((dz) => (
-        <mesh key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.06)]}>
+        <mesh key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.02)]}>
           <boxGeometry args={[WALL_T + 0.04, DOOR_H, 0.12]} />
           <meshStandardMaterial color={room.accent} />
         </mesh>
       ))}
-      <mesh position={[x, DOOR_H + 0.06, room.z]}>
-        <boxGeometry args={[WALL_T + 0.04, 0.12, DOOR_W + 0.24]} />
+      <mesh position={[x, DOOR_H + 0.05, room.z]}>
+        <boxGeometry args={[WALL_T + 0.04, 0.14, DOOR_W + 0.24]} />
         <meshStandardMaterial color={room.accent} />
       </mesh>
+
       {/* open door panel swung into the room */}
       <mesh
         position={[sign * (HALF + WALL_T + 0.35), DOOR_H / 2, room.z + DOOR_W / 2 + 0.6]}
@@ -459,6 +478,9 @@ function World({
   const cam = useRef<THREE.Camera>(camera);
   cam.current = camera;
   const lookAt = useRef(new THREE.Vector3(0, 1.2, 2));
+  const camYaw = useRef(0);
+  const camDist = useRef(CAM_DIST);
+
   const nearbyRef = useRef<string>("");
   const activeRef = useRef<string | null>(null);
   const [nearby, setNearby] = useState<string[]>([]);
@@ -466,11 +488,33 @@ function World({
   useFrame((_, rawDelta) => {
     const delta = Math.min(rawDelta, 0.05);
     const k = keys.current;
+
+    // ---- 1. camera rig orientation, updated BEFORE movement is resolved so
+    // input is always relative to the yaw the player will actually see.
+    const targetYaw = Math.atan2(facing.current.x, facing.current.y);
+    let dYaw = targetYaw - camYaw.current;
+    while (dYaw > Math.PI) dYaw -= Math.PI * 2;
+    while (dYaw < -Math.PI) dYaw += Math.PI * 2;
+    camYaw.current += dYaw * (1 - Math.pow(0.02, delta));
+
+    // camera-relative basis on the XZ plane (y deliberately zeroed: the rig
+    // looks slightly downward, and that pitch must not bleed into movement)
+    const fwd = new THREE.Vector2(Math.sin(camYaw.current), Math.cos(camYaw.current));
+    const right = new THREE.Vector2(-fwd.y, fwd.x);
+
+    // ---- 2. camera-relative movement
     const ix = (k['KeyD'] || k['ArrowRight'] ? 1 : 0) - (k['KeyA'] || k['ArrowLeft'] ? 1 : 0);
     const iz = (k['KeyW'] || k['ArrowUp'] ? 1 : 0) - (k['KeyS'] || k['ArrowDown'] ? 1 : 0);
-    const move = new THREE.Vector2(ix, iz);
-    if (move.lengthSq() > 0) {
-      move.normalize().multiplyScalar(3.2 * delta);
+    const move = new THREE.Vector2(
+      fwd.x * iz + right.x * ix,
+      fwd.y * iz + right.y * ix,
+    );
+    const moving = ix !== 0 || iz !== 0;
+    if (moving) {
+      // normalize first so diagonals aren't faster than cardinals
+      move.normalize();
+      const dir = move.clone();
+      move.multiplyScalar(3.2 * delta);
       // doorway funnel: gently centre the walk line when squeezing through a door
       if (Math.abs(move.x) > 0.001) {
         for (const room of ROOMS) {
@@ -491,7 +535,7 @@ function World({
       resolveCollisions(player.current);
       player.current.y += move.y;
       resolveCollisions(player.current);
-      facing.current.lerp(new THREE.Vector2(move.x, move.y).normalize(), 0.2).normalize();
+      facing.current.lerp(dir, 1 - Math.pow(0.0005, delta)).normalize();
     }
 
 
@@ -502,35 +546,47 @@ function World({
       let diff = targetRot - cur;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      group.current.rotation.y = cur + diff * 0.15;
-      const bob = move.lengthSq() > 0 ? Math.abs(Math.sin(performance.now() * 0.012)) * 0.06 : 0;
+      group.current.rotation.y = cur + diff * (1 - Math.pow(0.0005, delta));
+      const bob = moving ? Math.abs(Math.sin(performance.now() * 0.012)) * 0.06 : 0;
       group.current.position.y = bob;
     }
 
+    // ---- 3. camera placement
     {
-      const BASE_DIST = 3;
+      const ideal = new THREE.Vector2(
+        player.current.x - fwd.x * CAM_DIST,
+        player.current.y - fwd.y * CAM_DIST,
+      );
+      // obstruction test uses the character's own collider radius, so the
+      // camera is stopped by exactly the surfaces the character is
+      const t = cameraClearance(player.current, ideal);
+      const dist = CAM_DIST * t;
+      // damp the boom length so wall pull-ins ease instead of popping
+      camDist.current = THREE.MathUtils.damp(camDist.current, dist, 9, delta);
+      // clamp: never let the boom lag further than a small margin behind target
+      camDist.current = THREE.MathUtils.clamp(camDist.current, dist - 0.5, CAM_DIST);
+
       const desired = new THREE.Vector3(
-        player.current.x - facing.current.x * BASE_DIST,
-        2,
-        player.current.y - facing.current.y * BASE_DIST,
+        player.current.x - fwd.x * camDist.current,
+        1.2 + (CAM_HEIGHT - 1.2) * (camDist.current / CAM_DIST),
+        player.current.y - fwd.y * camDist.current,
       );
-      // pull the camera in if a wall sits between the character and the ideal spot
-      const t = cameraClearance(
-        player.current,
-        new THREE.Vector2(desired.x, desired.z),
+      cam.current.position.lerp(desired, 1 - Math.pow(0.0008, delta));
+      // hard clamp against overshoot/drift on fast direction changes
+      const planar = new THREE.Vector2(
+        cam.current.position.x - player.current.x,
+        cam.current.position.z - player.current.y,
       );
-      desired.x = player.current.x + (desired.x - player.current.x) * t;
-      desired.z = player.current.y + (desired.z - player.current.y) * t;
-      desired.y = 1.9 + (1 - t) * 1.4;
-      // frame-rate independent damping
-      cam.current.position.lerp(desired, 1 - Math.pow(0.0001, delta));
-      // always keep the character centred in frame
-      lookAt.current.lerp(
-        new THREE.Vector3(player.current.x, 1.15, player.current.y),
-        1 - Math.pow(0.0005, delta),
-      );
+      if (planar.length() > CAM_DIST + 0.4) {
+        planar.setLength(CAM_DIST + 0.4);
+        cam.current.position.x = player.current.x + planar.x;
+        cam.current.position.z = player.current.y + planar.y;
+      }
+      // look target depends only on the character's position
+      lookAt.current.set(player.current.x, 1.15, player.current.y);
       cam.current.lookAt(lookAt.current);
     }
+
 
 
     // proximity
@@ -614,7 +670,7 @@ export default function DormHallway() {
         shadows
         dpr={[1, 2]}
         gl={{ antialias: true }}
-        camera={{ fov: 62, near: 0.1, far: 80, position: [0, 2.5, -2] }}
+        camera={{ fov: 58, near: 0.5, far: 80, position: [0, 2.5, -5] }}
       >
         <World onNearby={() => {}} onActive={setActiveKey} />
       </Canvas>
