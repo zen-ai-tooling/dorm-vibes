@@ -481,11 +481,33 @@ function World({
   useFrame((_, rawDelta) => {
     const delta = Math.min(rawDelta, 0.05);
     const k = keys.current;
+
+    // ---- 1. camera rig orientation, updated BEFORE movement is resolved so
+    // input is always relative to the yaw the player will actually see.
+    const targetYaw = Math.atan2(facing.current.x, facing.current.y);
+    let dYaw = targetYaw - camYaw.current;
+    while (dYaw > Math.PI) dYaw -= Math.PI * 2;
+    while (dYaw < -Math.PI) dYaw += Math.PI * 2;
+    camYaw.current += dYaw * (1 - Math.pow(0.02, delta));
+
+    // camera-relative basis on the XZ plane (y deliberately zeroed: the rig
+    // looks slightly downward, and that pitch must not bleed into movement)
+    const fwd = new THREE.Vector2(Math.sin(camYaw.current), Math.cos(camYaw.current));
+    const right = new THREE.Vector2(-fwd.y, fwd.x);
+
+    // ---- 2. camera-relative movement
     const ix = (k['KeyD'] || k['ArrowRight'] ? 1 : 0) - (k['KeyA'] || k['ArrowLeft'] ? 1 : 0);
     const iz = (k['KeyW'] || k['ArrowUp'] ? 1 : 0) - (k['KeyS'] || k['ArrowDown'] ? 1 : 0);
-    const move = new THREE.Vector2(ix, iz);
-    if (move.lengthSq() > 0) {
-      move.normalize().multiplyScalar(3.2 * delta);
+    const move = new THREE.Vector2(
+      fwd.x * iz + right.x * ix,
+      fwd.y * iz + right.y * ix,
+    );
+    const moving = ix !== 0 || iz !== 0;
+    if (moving) {
+      // normalize first so diagonals aren't faster than cardinals
+      move.normalize();
+      const dir = move.clone();
+      move.multiplyScalar(3.2 * delta);
       // doorway funnel: gently centre the walk line when squeezing through a door
       if (Math.abs(move.x) > 0.001) {
         for (const room of ROOMS) {
@@ -506,7 +528,7 @@ function World({
       resolveCollisions(player.current);
       player.current.y += move.y;
       resolveCollisions(player.current);
-      facing.current.lerp(new THREE.Vector2(move.x, move.y).normalize(), 0.2).normalize();
+      facing.current.lerp(dir, 1 - Math.pow(0.0005, delta)).normalize();
     }
 
 
@@ -517,35 +539,47 @@ function World({
       let diff = targetRot - cur;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      group.current.rotation.y = cur + diff * 0.15;
-      const bob = move.lengthSq() > 0 ? Math.abs(Math.sin(performance.now() * 0.012)) * 0.06 : 0;
+      group.current.rotation.y = cur + diff * (1 - Math.pow(0.0005, delta));
+      const bob = moving ? Math.abs(Math.sin(performance.now() * 0.012)) * 0.06 : 0;
       group.current.position.y = bob;
     }
 
+    // ---- 3. camera placement
     {
-      const BASE_DIST = 3;
+      const ideal = new THREE.Vector2(
+        player.current.x - fwd.x * CAM_DIST,
+        player.current.y - fwd.y * CAM_DIST,
+      );
+      // obstruction test uses the character's own collider radius, so the
+      // camera is stopped by exactly the surfaces the character is
+      const t = cameraClearance(player.current, ideal);
+      const dist = CAM_DIST * t;
+      // damp the boom length so wall pull-ins ease instead of popping
+      camDist.current = THREE.MathUtils.damp(camDist.current, dist, 9, delta);
+      // clamp: never let the boom lag further than a small margin behind target
+      camDist.current = THREE.MathUtils.clamp(camDist.current, dist - 0.5, CAM_DIST);
+
       const desired = new THREE.Vector3(
-        player.current.x - facing.current.x * BASE_DIST,
-        2,
-        player.current.y - facing.current.y * BASE_DIST,
+        player.current.x - fwd.x * camDist.current,
+        1.2 + (CAM_HEIGHT - 1.2) * (camDist.current / CAM_DIST),
+        player.current.y - fwd.y * camDist.current,
       );
-      // pull the camera in if a wall sits between the character and the ideal spot
-      const t = cameraClearance(
-        player.current,
-        new THREE.Vector2(desired.x, desired.z),
+      cam.current.position.lerp(desired, 1 - Math.pow(0.0008, delta));
+      // hard clamp against overshoot/drift on fast direction changes
+      const planar = new THREE.Vector2(
+        cam.current.position.x - player.current.x,
+        cam.current.position.z - player.current.y,
       );
-      desired.x = player.current.x + (desired.x - player.current.x) * t;
-      desired.z = player.current.y + (desired.z - player.current.y) * t;
-      desired.y = 1.9 + (1 - t) * 1.4;
-      // frame-rate independent damping
-      cam.current.position.lerp(desired, 1 - Math.pow(0.0001, delta));
-      // always keep the character centred in frame
-      lookAt.current.lerp(
-        new THREE.Vector3(player.current.x, 1.15, player.current.y),
-        1 - Math.pow(0.0005, delta),
-      );
+      if (planar.length() > CAM_DIST + 0.4) {
+        planar.setLength(CAM_DIST + 0.4);
+        cam.current.position.x = player.current.x + planar.x;
+        cam.current.position.z = player.current.y + planar.y;
+      }
+      // look target depends only on the character's position
+      lookAt.current.set(player.current.x, 1.15, player.current.y);
       cam.current.lookAt(lookAt.current);
     }
+
 
 
     // proximity
