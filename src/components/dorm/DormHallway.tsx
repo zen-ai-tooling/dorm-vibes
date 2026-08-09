@@ -655,6 +655,8 @@ function World({
   const lookAt = useRef(new THREE.Vector3(0, 1.2, 2));
   const camYaw = useRef(0);
   const camDist = useRef(CAM_DIST);
+  /** 0 = hallway diorama framing, 1 = intimate in-room framing */
+  const roomBlend = useRef(0);
 
   // --- click/tap-to-move state (additive: WASD input cancels it instantly)
   const path = useRef<THREE.Vector2[]>([]);
