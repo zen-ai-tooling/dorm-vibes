@@ -24,6 +24,7 @@ import { HallwayWindows, wallPanels } from "./Windows";
 import { LockedDoor } from "./LockedDoor";
 import { Companion } from "./Companion";
 import { DoorStickers, NowPlayingPulse } from "./DoorDecor";
+import { RoomMood } from "./RoomMood";
 
 
 type Box = { cx: number; cz: number; sx: number; sz: number };
