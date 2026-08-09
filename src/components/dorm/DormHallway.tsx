@@ -318,8 +318,8 @@ function RoomShell({ room }: { room: Room }) {
       <mesh position={[cx, 0.02, room.z - 0.4]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
         <planeGeometry args={[2.2, 1.8]} />
         <meshStandardMaterial color={room.accent} opacity={0.5} transparent depthWrite={false} />
-
       </mesh>
+
       {/* desk */}
       <mesh position={[cx - sign * 1.8, 0.75, room.z + 1.9]} castShadow>
         <boxGeometry args={[1.4, 0.1, 0.7]} />
