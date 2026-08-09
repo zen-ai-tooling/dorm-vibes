@@ -104,3 +104,22 @@ export const sideSign = (side: Room["side"]) => (side === "left" ? -1 : 1);
 /** center x of a room interior */
 export const roomCenterX = (side: Room["side"]) =>
   sideSign(side) * (HALL_W / 2 + WALL_T + ROOM_SIZE / 2);
+
+// --- Shared hallway dressing (dorm-wide, not per-person) ---
+import flyerFloorMeeting from "@/assets/flyer-floor-meeting.jpg";
+
+export type CommunityItem = { text: string; image?: string };
+
+/** midpoint of the built hallway, on the left wall between doors */
+export const COMMUNITY_BOARD = {
+  z: 10,
+  side: "left" as const,
+  items: [
+    { text: "Floor meeting — Thurs 7pm", image: flyerFloorMeeting },
+    { text: "Quiet hours start 10pm" },
+    { text: "Laundry room card reader is fixed" },
+  ] as CommunityItem[],
+};
+
+export const VENDING = { z: 6.6, side: "right" as const };
+export const LOST_AND_FOUND = { z: -1.6, side: "right" as const };
