@@ -551,7 +551,6 @@ function World({
     };
   }, []);
 
-  (window as unknown as Record<string, unknown>)["__dormPlayer"] = player;
 
   const nearbyRef = useRef<string>("");
   const activeRef = useRef<string | null>(null);
