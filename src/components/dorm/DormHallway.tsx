@@ -43,11 +43,11 @@ const PLAYER_R = 0.42;
 // elevated "diorama" rig: high above the ceiling plane looking down at ~46deg
 const CAM_DIST = 8.5;
 const CAM_HEIGHT = 10;
-/** intimate in-room rig: closer + lower so decor and text read clearly */
-const ROOM_CAM_DIST = 4.4;
-const ROOM_CAM_HEIGHT = 3.1;
-/** seconds to blend between hallway and room framing */
-const CAM_BLEND_SECONDS = 0.75;
+/** intimate in-room rig: sits over the doorway looking straight into the room */
+const ROOM_CAM_DIST = 6.2;
+const ROOM_CAM_HEIGHT = 4.8;
+/** seconds to blend between hallway and room framing (snappy on purpose) */
+const CAM_BLEND_SECONDS = 0.28;
 
 /** true when the character has crossed the hallway wall plane into a room */
 function roomContaining(x: number, z: number): Room | null {
@@ -389,6 +389,10 @@ function Character({
   const EYE = "#1B1016";
   return (
     <group ref={groupRef}>
+      {/* travelling fill light: keeps the character readable at any camera
+          angle (the room rig sits lower than the diorama key light) */}
+      <pointLight position={[0, 2.4, 0]} intensity={3.2} distance={5} decay={2} color="#FFE3C4" />
+
       {/* contact shadow — keeps the character grounded at distance */}
       <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={2}>
         <circleGeometry args={[0.44, 20]} />
@@ -755,6 +759,9 @@ function World({
   const camDist = useRef(CAM_DIST);
   /** 0 = hallway diorama framing, 1 = intimate in-room framing */
   const roomBlend = useRef(0);
+  /** last room the character was inside, so the blend-out keeps its framing */
+  const roomAnchor = useRef<Room | null>(null);
+
 
   // --- click/tap-to-move state (additive: WASD input cancels it instantly)
   const path = useRef<THREE.Vector2[]>([]);
@@ -806,11 +813,17 @@ function World({
 
     // ---- 1. camera rig orientation, updated BEFORE movement is resolved so
     // input is always relative to the yaw the player will actually see.
-    const targetYaw = Math.atan2(facing.current.x, facing.current.y);
+    // Inside a room the rig is anchored to the room itself (looking from the
+    // doorway straight into the interior) rather than trailing the character.
+    const curRoom = roomContaining(player.current.x, player.current.y);
+    const wantRoom = curRoom ? 1 : 0;
+    const roomYaw = curRoom ? Math.atan2(sideSign(curRoom.side), 0) : 0;
+    const targetYaw = curRoom ? roomYaw : Math.atan2(facing.current.x, facing.current.y);
     let dYaw = targetYaw - camYaw.current;
     while (dYaw > Math.PI) dYaw -= Math.PI * 2;
     while (dYaw < -Math.PI) dYaw += Math.PI * 2;
-    camYaw.current += dYaw * (1 - Math.pow(0.25, delta));
+    // snap toward the room yaw quickly; drift lazily behind the character in the hallway
+    camYaw.current += dYaw * (1 - Math.pow(curRoom ? 0.0005 : 0.25, delta));
 
     // camera-relative basis on the XZ plane (y deliberately zeroed: the rig
     // looks slightly downward, and that pitch must not bleed into movement)
@@ -896,8 +909,6 @@ function World({
 
     // ---- 3. camera placement: diorama in the hallway, intimate inside a room
     {
-      // same wall-plane/room-bounds signal the proximity system rides on
-      const wantRoom = roomContaining(player.current.x, player.current.y) ? 1 : 0;
       // short, deliberate lean-in/out rather than an instant cut
       const step = delta / CAM_BLEND_SECONDS;
       roomBlend.current = THREE.MathUtils.clamp(
@@ -908,52 +919,44 @@ function World({
       const b = roomBlend.current;
       const s = b * b * (3 - 2 * b); // smoothstep the blend curve
 
-      let targetDist = THREE.MathUtils.lerp(CAM_DIST, ROOM_CAM_DIST, s);
-      const targetHeight = THREE.MathUtils.lerp(CAM_HEIGHT, ROOM_CAM_HEIGHT, s);
+      if (curRoom) roomAnchor.current = curRoom;
+      const anchorRoom = roomAnchor.current;
 
-      // obstruction: at the lower in-room height the boom can hit walls, so
-      // pull it in until the line back to the character is clear
-      if (s > 0.05) {
-        const from = new THREE.Vector2(player.current.x, player.current.y);
-        for (let i = 0; i < 8; i++) {
-          const to = new THREE.Vector2(
-            player.current.x - fwd.x * targetDist,
-            player.current.y - fwd.y * targetDist,
-          );
-          // only enforce clearance proportionally to how "in-room" we are
-          if (segmentClear(from, to, 0.45 * s)) break;
-          targetDist -= 0.35;
-          if (targetDist < 1.9) {
-            targetDist = 1.9;
-            break;
-          }
-        }
+      const targetDist = THREE.MathUtils.lerp(CAM_DIST, ROOM_CAM_DIST, s);
+      const targetHeight = THREE.MathUtils.lerp(CAM_HEIGHT, ROOM_CAM_HEIGHT, s);
+      camDist.current = THREE.MathUtils.damp(camDist.current, targetDist, 12, delta);
+
+      // The room rig frames the interior, not the character's back: the focus
+      // point slides toward the room centre so furniture, companion and board
+      // all stay in the shot with the character reading small in frame.
+      const focus = new THREE.Vector2(player.current.x, player.current.y);
+      if (anchorRoom && s > 0.001) {
+        const sign = sideSign(anchorRoom.side);
+        const cx = sign * (HALF + WALL_T + ROOM_SIZE / 2);
+        focus.x = THREE.MathUtils.lerp(focus.x, cx, s * 0.85);
+        focus.y = THREE.MathUtils.lerp(focus.y, anchorRoom.z, s * 0.85);
       }
 
-      camDist.current = THREE.MathUtils.damp(camDist.current, targetDist, 6, delta);
-
       const desired = new THREE.Vector3(
-        player.current.x - fwd.x * camDist.current,
+        focus.x - fwd.x * camDist.current,
         targetHeight,
-        player.current.y - fwd.y * camDist.current,
+        focus.y - fwd.y * camDist.current,
       );
-      // relaxed, floaty follow — observational, not a chase cam (a touch
-      // tighter inside a room so the closer framing stays readable)
-      const follow = THREE.MathUtils.lerp(0.06, 0.02, s);
+      // relaxed, floaty follow in the hallway; snappy once committed to a room
+      const follow = THREE.MathUtils.lerp(0.06, 0.0004, s);
       cam.current.position.lerp(desired, 1 - Math.pow(follow, delta));
-      // keep the character comfortably framed even during heavy lag
+      // keep the frame anchored even during heavy lag
       const maxPlanar = camDist.current * 1.35;
       const planar = new THREE.Vector2(
-        cam.current.position.x - player.current.x,
-        cam.current.position.z - player.current.y,
+        cam.current.position.x - focus.x,
+        cam.current.position.z - focus.y,
       );
       if (planar.length() > maxPlanar) {
         planar.setLength(maxPlanar);
-        cam.current.position.x = player.current.x + planar.x;
-        cam.current.position.z = player.current.y + planar.y;
+        cam.current.position.x = focus.x + planar.x;
+        cam.current.position.z = focus.y + planar.y;
       }
-      // look target depends only on the character's position
-      lookAt.current.set(player.current.x, THREE.MathUtils.lerp(1.15, 1.35, s), player.current.y);
+      lookAt.current.set(focus.x, THREE.MathUtils.lerp(1.15, 1.45, s), focus.y);
       cam.current.lookAt(lookAt.current);
     }
 
