@@ -91,6 +91,7 @@ export const ROOMS: Room[] = [
       variant: "succulent",
     },
     door: { owner: "You", stickers: ["note", "star"], isActive: true },
+    decor: { wallpaper: "dots", wallpaperColor: "#2F6F62", posters: ["vinyl", "sunset"] },
   },
   {
     id: "sam",
