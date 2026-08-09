@@ -242,7 +242,8 @@ function Structure() {
       </mesh>
       <mesh position={[0, HALL_H + 0.06, (HALL_START + HALL_END) / 2]}>
         <boxGeometry args={[HALL_W + WALL_T * 2, 0.12, HALL_END - HALL_START]} />
-        <meshStandardMaterial color={COLORS.ceiling} side={THREE.BackSide} />
+        <meshStandardMaterial color={COLORS.ceiling} />
+
       </mesh>
       {/* floor plank seams */}
       {Array.from({ length: Math.floor((HALL_END - HALL_START) / 1.5) }).map((_, i) => (
@@ -255,7 +256,11 @@ function Structure() {
       {WALLS.map((w, i) => (
         <mesh key={i} position={[w.cx, HALL_H / 2, w.cz]} castShadow receiveShadow>
           <boxGeometry args={[w.sx, HALL_H, w.sz]} />
-          <meshStandardMaterial color={COLORS.wall} side={THREE.BackSide} />
+          {/* DoubleSide, not BackSide: with BackSide the near wall face was
+              culled, so it wrote no depth and room furniture bled through the
+              wall and fought with the far face */}
+          <meshStandardMaterial color={COLORS.wall} side={THREE.DoubleSide} />
+
         </mesh>
       ))}
       {/* baseboard trim along hallway */}
@@ -274,17 +279,19 @@ function RoomShell({ room }: { room: Room }) {
   const cx = roomCenterX(room.side);
   return (
     <group>
-      {/* floor/ceiling slabs butt up against the hallway slab (which already
-          covers up to HALF + WALL_T) instead of overlapping it — overlapping
-          coplanar slabs were the source of the z-fighting at the doorways */}
-      <mesh position={[cx + sign * (WALL_T / 2), -0.06, room.z]} receiveShadow>
-        <boxGeometry args={[ROOM_SIZE + WALL_T, 0.12, ROOM_SIZE + WALL_T * 2]} />
+      {/* floor/ceiling slabs overlap the hallway slab by 4cm at the doorway.
+          Butting them exactly edge-to-edge left two coincident vertical side
+          faces at x = HALF + WALL_T, which fought at grazing angles near the
+          floor; a small interpenetration removes the shared plane entirely. */}
+      <mesh position={[cx + sign * (WALL_T / 2 - 0.02), -0.06, room.z]} receiveShadow>
+        <boxGeometry args={[ROOM_SIZE + WALL_T + 0.04, 0.12, ROOM_SIZE + WALL_T * 2]} />
         <meshStandardMaterial color={COLORS.floor} />
       </mesh>
-      <mesh position={[cx + sign * (WALL_T / 2), HALL_H + 0.06, room.z]}>
-        <boxGeometry args={[ROOM_SIZE + WALL_T, 0.12, ROOM_SIZE + WALL_T * 2]} />
-        <meshStandardMaterial color={COLORS.ceiling} side={THREE.BackSide} />
+      <mesh position={[cx + sign * (WALL_T / 2 - 0.02), HALL_H + 0.06, room.z]}>
+        <boxGeometry args={[ROOM_SIZE + WALL_T + 0.04, 0.12, ROOM_SIZE + WALL_T * 2]} />
+        <meshStandardMaterial color={COLORS.ceiling} />
       </mesh>
+
       {/* interior accent trim rail — embedded 0.01 into the wall so no face is
           coplanar with the wall surface behind it */}
       {[-1, 1].map((dz) => (
@@ -308,10 +315,11 @@ function RoomShell({ room }: { room: Room }) {
         <meshStandardMaterial color={room.accent} />
       </mesh>
       {/* rug */}
-      <mesh position={[cx, 0.02, room.z - 0.4]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh position={[cx, 0.02, room.z - 0.4]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
         <planeGeometry args={[2.2, 1.8]} />
-        <meshStandardMaterial color={room.accent} opacity={0.5} transparent />
+        <meshStandardMaterial color={room.accent} opacity={0.5} transparent depthWrite={false} />
       </mesh>
+
       {/* desk */}
       <mesh position={[cx - sign * 1.8, 0.75, room.z + 1.9]} castShadow>
         <boxGeometry args={[1.4, 0.1, 0.7]} />
