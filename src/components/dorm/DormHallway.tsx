@@ -279,17 +279,19 @@ function RoomShell({ room }: { room: Room }) {
   const cx = roomCenterX(room.side);
   return (
     <group>
-      {/* floor/ceiling slabs butt up against the hallway slab (which already
-          covers up to HALF + WALL_T) instead of overlapping it — overlapping
-          coplanar slabs were the source of the z-fighting at the doorways */}
-      <mesh position={[cx + sign * (WALL_T / 2), -0.06, room.z]} receiveShadow>
-        <boxGeometry args={[ROOM_SIZE + WALL_T, 0.12, ROOM_SIZE + WALL_T * 2]} />
+      {/* floor/ceiling slabs overlap the hallway slab by 4cm at the doorway.
+          Butting them exactly edge-to-edge left two coincident vertical side
+          faces at x = HALF + WALL_T, which fought at grazing angles near the
+          floor; a small interpenetration removes the shared plane entirely. */}
+      <mesh position={[cx + sign * (WALL_T / 2 - 0.02), -0.06, room.z]} receiveShadow>
+        <boxGeometry args={[ROOM_SIZE + WALL_T + 0.04, 0.12, ROOM_SIZE + WALL_T * 2]} />
         <meshStandardMaterial color={COLORS.floor} />
       </mesh>
-      <mesh position={[cx + sign * (WALL_T / 2), HALL_H + 0.06, room.z]}>
-        <boxGeometry args={[ROOM_SIZE + WALL_T, 0.12, ROOM_SIZE + WALL_T * 2]} />
-        <meshStandardMaterial color={COLORS.ceiling} side={THREE.BackSide} />
+      <mesh position={[cx + sign * (WALL_T / 2 - 0.02), HALL_H + 0.06, room.z]}>
+        <boxGeometry args={[ROOM_SIZE + WALL_T + 0.04, 0.12, ROOM_SIZE + WALL_T * 2]} />
+        <meshStandardMaterial color={COLORS.ceiling} />
       </mesh>
+
       {/* interior accent trim rail — embedded 0.01 into the wall so no face is
           coplanar with the wall surface behind it */}
       {[-1, 1].map((dz) => (
