@@ -28,6 +28,7 @@ import { RoomMood } from "./RoomMood";
 import { RoomDecor } from "./RoomDecor";
 import { Speaker } from "./Speaker";
 import { SoftBox, GroundAO, WallSkirt, jitter } from "./soft";
+import { LightCuller } from "./LightCuller";
 
 
 type Box = {
@@ -1093,6 +1094,7 @@ function World({
       <fog attach="fog" args={[COLORS.fog, 14, 34]} />
 
       <DaylightRig />
+      <LightCuller />
 
 
       {/* invisible ground pick-plane: click/tap anywhere walkable to walk there */}
