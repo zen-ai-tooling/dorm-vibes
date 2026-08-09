@@ -142,47 +142,6 @@ function resolveCollisions(pos: THREE.Vector2, radius = PLAYER_R) {
   }
 }
 
-/**
- * Shortest travel fraction from `from` toward `to` before hitting a wall (2D).
- * `pad` matches the character's own collider radius so the camera is blocked by
- * exactly the same surfaces the character is.
- */
-function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = PLAYER_R) {
-  const dx = to.x - from.x;
-  const dz = to.y - from.y;
-  let best = 1;
-  for (const w of WALLS) {
-    const hx = w.sx / 2 + pad;
-    const hz = w.sz / 2 + pad;
-    const minX = w.cx - hx;
-    const maxX = w.cx + hx;
-    const minZ = w.cz - hz;
-    const maxZ = w.cz + hz;
-    let t0 = 0;
-    let t1 = 1;
-    for (const [o, d, lo, hi] of [
-      [from.x, dx, minX, maxX],
-      [from.y, dz, minZ, maxZ],
-    ] as [number, number, number, number][]) {
-      if (Math.abs(d) < 1e-6) {
-        if (o < lo || o > hi) {
-          t0 = 1;
-          t1 = 0;
-          break;
-        }
-        continue;
-      }
-      let ta = (lo - o) / d;
-      let tb = (hi - o) / d;
-      if (ta > tb) [ta, tb] = [tb, ta];
-      t0 = Math.max(t0, ta);
-      t1 = Math.min(t1, tb);
-    }
-    if (t0 <= t1 && t0 >= 0 && t0 < best) best = t0;
-  }
-  return THREE.MathUtils.clamp(best * 0.96, 0.24, 1);
-}
-
 /** true when a straight walk from a→b never enters a wall AABB (padded) */
 function segmentClear(a: THREE.Vector2, b: THREE.Vector2, pad = PLAYER_R * 0.95) {
   const dx = b.x - a.x;
@@ -382,10 +341,12 @@ function Structure() {
         <boxGeometry args={[HALL_W + WALL_T * 2, 0.12, HALL_END - HALL_START]} />
         <meshStandardMaterial color={COLORS.floor} />
       </mesh>
-      <mesh position={[0, HALL_H + 0.06, (HALL_START + HALL_END) / 2]}>
-        <boxGeometry args={[HALL_W + WALL_T * 2, 0.12, HALL_END - HALL_START]} />
+      <mesh
+        position={[0, HALL_H, (HALL_START + HALL_END) / 2]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <planeGeometry args={[HALL_W + WALL_T * 2, HALL_END - HALL_START]} />
         <meshStandardMaterial color={COLORS.ceiling} />
-
       </mesh>
       {/* floor plank seams */}
       {Array.from({ length: Math.floor((HALL_END - HALL_START) / 1.5) }).map((_, i) => (
@@ -432,8 +393,11 @@ function RoomShell({ room }: { room: Room }) {
         <boxGeometry args={[ROOM_SIZE + WALL_T + 0.04, 0.12, ROOM_SIZE + WALL_T * 2]} />
         <meshStandardMaterial color={COLORS.floor} />
       </mesh>
-      <mesh position={[cx + sign * (WALL_T / 2 - 0.02), HALL_H + 0.06, room.z]}>
-        <boxGeometry args={[ROOM_SIZE + WALL_T + 0.04, 0.12, ROOM_SIZE + WALL_T * 2]} />
+      <mesh
+        position={[cx + sign * (WALL_T / 2 - 0.02), HALL_H, room.z]}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <planeGeometry args={[ROOM_SIZE + WALL_T + 0.04, ROOM_SIZE + WALL_T * 2]} />
         <meshStandardMaterial color={COLORS.ceiling} />
       </mesh>
 
@@ -945,7 +909,7 @@ export default function DormHallway() {
         shadows
         dpr={[1, 2]}
         gl={{ antialias: true }}
-        camera={{ fov: 58, near: 0.5, far: 90, position: [0, 4.2, -7.4] }}
+        camera={{ fov: 52, near: 0.5, far: 140, position: [0, 9, -10] }}
       >
         <World onNearby={() => {}} onActive={setActiveKey} />
       </Canvas>
