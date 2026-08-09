@@ -33,8 +33,9 @@ const HALF = HALL_W / 2;
 const WALL_CX = HALF + WALL_T / 2;
 const PLAYER_R = 0.42;
 /** third-person boom: distance behind and height above the character */
-const CAM_DIST = 5;
-const CAM_HEIGHT = 2.5;
+const CAM_DIST = 7.4;
+const CAM_HEIGHT = 4.2;
+const WALK_SPEED = 3.2;
 
 
 /** Split a wall run along z into segments, skipping doorway gaps. */
