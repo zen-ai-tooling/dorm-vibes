@@ -670,7 +670,7 @@ export default function DormHallway() {
         shadows
         dpr={[1, 2]}
         gl={{ antialias: true }}
-        camera={{ fov: 62, near: 0.1, far: 80, position: [0, 2.5, -2] }}
+        camera={{ fov: 58, near: 0.5, far: 80, position: [0, 2.5, -5] }}
       >
         <World onNearby={() => {}} onActive={setActiveKey} />
       </Canvas>
