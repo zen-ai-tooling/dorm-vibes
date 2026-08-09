@@ -62,6 +62,7 @@ export type Room = {
   bulletin: BulletinItem[];
   companion: Companion;
   door: DoorConfig;
+  decor: Decor;
 };
 
 export const ROOMS: Room[] = [
