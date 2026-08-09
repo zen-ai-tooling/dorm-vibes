@@ -176,8 +176,13 @@ export function LostAndFound() {
  * Decorative warm fairy lights strung down the ceiling. Deliberately dim —
  * the door lights and key light still do the real work.
  */
+const bulbDummy = new THREE.Object3D();
+const bulbColor = new THREE.Color();
+
 export function StringLights() {
-  const ref = useRef<THREE.Group>(null);
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const halo = useRef<THREE.InstancedMesh>(null);
+  const placed = useRef(false);
 
   // Anchor points along the ceiling; the wire sags between them like a real
   // strand drooping under its own weight (catenary-ish cosh curve).
@@ -225,15 +230,31 @@ export function StringLights() {
   }
 
   useFrame(({ clock }) => {
-    if (!ref.current) return;
+    const im = ref.current;
+    const hm = halo.current;
+    if (!im) return;
     const t = clock.elapsedTime;
-    ref.current.children.forEach((child, i) => {
-      const mesh = child as THREE.Mesh;
-      const mat = mesh.material as THREE.MeshStandardMaterial | undefined;
-      if (mat && "emissiveIntensity" in mat) {
-        mat.emissiveIntensity = 1.0 + Math.sin(t * 1.2 + i * 0.6) * 0.22;
-      }
-    });
+
+    // positions are static — write the matrices once
+    if (!placed.current) {
+      placed.current = true;
+      bulbs.forEach((b, i) => {
+        bulbDummy.position.set(b.x, b.y, b.z);
+        bulbDummy.updateMatrix();
+        im.setMatrixAt(i, bulbDummy.matrix);
+        hm?.setMatrixAt(i, bulbDummy.matrix);
+      });
+      im.instanceMatrix.needsUpdate = true;
+      if (hm) hm.instanceMatrix.needsUpdate = true;
+    }
+
+    // twinkle rides on per-instance colour (same phase offset as before)
+    for (let i = 0; i < bulbs.length; i++) {
+      const k = 0.86 + Math.sin(t * 1.2 + i * 0.6) * 0.14;
+      bulbColor.setRGB(k, k * 0.95, k * 0.84);
+      im.setColorAt(i, bulbColor);
+    }
+    if (im.instanceColor) im.instanceColor.needsUpdate = true;
   });
 
   return (
