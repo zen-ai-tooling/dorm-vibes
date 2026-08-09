@@ -19,6 +19,8 @@ import {
 } from "@/lib/dorm-data";
 import { HallwayDressing } from "./HallwayProps";
 import { DormAudio } from "@/lib/dorm-audio";
+import { DaylightRig, DoorLight } from "./Daylight";
+
 
 type Box = { cx: number; cz: number; sx: number; sz: number };
 
