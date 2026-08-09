@@ -242,7 +242,8 @@ function Structure() {
       </mesh>
       <mesh position={[0, HALL_H + 0.06, (HALL_START + HALL_END) / 2]}>
         <boxGeometry args={[HALL_W + WALL_T * 2, 0.12, HALL_END - HALL_START]} />
-        <meshStandardMaterial color={COLORS.ceiling} side={THREE.BackSide} />
+        <meshStandardMaterial color={COLORS.ceiling} />
+
       </mesh>
       {/* floor plank seams */}
       {Array.from({ length: Math.floor((HALL_END - HALL_START) / 1.5) }).map((_, i) => (
