@@ -879,7 +879,7 @@ function World({
   onActive: (key: string | null) => void;
 }) {
   const keys = useKeys();
-  const player = useRef(new THREE.Vector2(-4.8, 5));
+  const player = useRef(new THREE.Vector2(0, 0));
   const facing = useRef(new THREE.Vector2(0, 1));
   const group = useRef<THREE.Group>(null);
   const camera = useThree((s) => s.camera);
