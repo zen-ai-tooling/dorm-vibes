@@ -28,6 +28,7 @@ export function Probe() {
       meshes, lights,
       visibleLights: (()=>{let c=0;scene.traverse(o=>{if((o as any).isLight&&o.visible)c++});return c})(),
       medianFrameMs: arr[Math.floor(arr.length/2)],
+      matHist: (()=>{const g=new Map<any,number>();scene.traverse(o=>{const m=o as any;if(!m.isMesh||!m.visible)return;const mm=m.material;g.set(mm,(g.get(mm)||0)+1)});const h:Record<string,number>={};for(const [mm,n] of g){const k=(mm.type)+"|"+(mm.color?.getHexString?.()||"")+"|n"+n;h[k]=(h[k]||0)+1}return Object.entries(h).sort((a,b)=>b[1]-a[1]).slice(0,15)})(),
       groups: (()=>{const g:Record<string,number>={};scene.traverse(o=>{const m=o as any;if(!m.isMesh)return;const k=(m.geometry?.type||"?")+"|"+(m.geometry?.uuid?.slice(0,4))+"|"+((m.material as any)?.color?.getHexString?.()||"");g[k]=(g[k]||0)+1});return Object.entries(g).sort((a,b)=>b[1]-a[1]).slice(0,18)})(),
       samples: arr.length,
     };
