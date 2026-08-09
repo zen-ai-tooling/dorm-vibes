@@ -25,6 +25,8 @@ import { LockedDoor } from "./LockedDoor";
 import { Companion } from "./Companion";
 import { DoorStickers, NowPlayingPulse } from "./DoorDecor";
 import { RoomMood } from "./RoomMood";
+import { RoomDecor } from "./RoomDecor";
+import { Speaker } from "./Speaker";
 import { SoftBox, GroundAO, WallSkirt, jitter } from "./soft";
 
 
@@ -694,6 +696,9 @@ function RoomShell({ room }: { room: Room }) {
         ))}
       </group>
 
+      {/* swappable decor read from room.decor (wallpaper + posters) */}
+      <RoomDecor room={room} />
+
       {/* data-derived mood atmosphere (tint fill + batched particles) */}
       <RoomMood room={room} />
     </group>
@@ -773,53 +778,6 @@ function DoorFrame({ room }: { room: Room }) {
           </span>
         </div>
       </Html>
-    </group>
-  );
-}
-
-function Speaker({ item, nearby }: { item: Interactive; nearby: boolean }) {
-  const ref = useRef<THREE.Group>(null);
-  useFrame(({ clock }) => {
-    if (ref.current) ref.current.position.y = 1.35 + Math.sin(clock.elapsedTime * 2) * 0.06;
-  });
-  return (
-    <group position={[item.x, 0, item.z]}>
-      <GroundAO size={1.35} opacity={0.45} />
-      <RoundedBox
-        position={[0, 0.55, 0]}
-        rotation={[0, jitter(`spk-${item.room.id}`, 0.09), 0]}
-        castShadow
-        args={[0.6, 1.1, 0.55]}
-        radius={0.17}
-        smoothness={1}
-      >
-        <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
-      </RoundedBox>
-      <mesh position={[0, 0.75, 0.29]}>
-        <cylinderGeometry args={[0.18, 0.18, 0.05, 8]} />
-        <meshStandardMaterial color={item.room.accent} />
-      </mesh>
-      <mesh position={[0, 0.75, 0.29]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.18, 0.18, 0.06, 8]} />
-        <meshStandardMaterial color={item.room.accent} />
-      </mesh>
-      <mesh position={[0, 0.3, 0.29]} rotation={[Math.PI / 2, 0, 0]}>
-        <cylinderGeometry args={[0.1, 0.1, 0.06, 8]} />
-        <meshStandardMaterial color="#2E241C" />
-      </mesh>
-      {nearby && (
-        <group ref={ref}>
-          <pointLight color={item.room.accent} intensity={4} distance={3} />
-          <mesh>
-            <octahedronGeometry args={[0.16, 0]} />
-            <meshStandardMaterial
-              color={item.room.accent}
-              emissive={item.room.accent}
-              emissiveIntensity={0.9}
-            />
-          </mesh>
-        </group>
-      )}
     </group>
   );
 }
@@ -1183,7 +1141,12 @@ function World({
             }}
           >
             {item.kind === "speaker" ? (
-              <Speaker item={item} nearby={nearby.includes(item.key)} />
+              <Speaker
+                room={item.room}
+                x={item.x}
+                z={item.z}
+                nearby={nearby.includes(item.key)}
+              />
             ) : item.kind === "board" ? (
               <BulletinBoard item={item} nearby={nearby.includes(item.key)} />
             ) : (
