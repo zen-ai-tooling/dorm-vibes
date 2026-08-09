@@ -15,7 +15,10 @@ function C() {
   if (!m) return null;
   return (
     <div style={{ height: "100vh" }}>
-      <Canvas camera={{ position: [cx + 3.5, 2.6, room.z - 5.5], fov: 55 }}>
+      <Canvas
+        camera={{ position: [cx + 2.2, 2.4, room.z - 4.6], fov: 60 }}
+        onCreated={({ camera }) => camera.lookAt(cx - 0.6, 1.6, room.z - 1.2)}
+      >
         <ambientLight intensity={1.2} />
         <directionalLight position={[4, 6, 2]} intensity={2} />
         <RoomDecor room={room} />
