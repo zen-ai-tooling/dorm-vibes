@@ -44,18 +44,25 @@ const PLAYER_R = 0.42;
 // elevated "diorama" rig: high above the ceiling plane looking down at ~46deg
 const CAM_DIST = 8.5;
 const CAM_HEIGHT = 10;
-/** intimate in-room rig: sits over the doorway looking straight into the room */
-const ROOM_CAM_DIST = 6.2;
-const ROOM_CAM_HEIGHT = 4.8;
+/**
+ * Intimate in-room rig. The boom is measured from the ROOM CENTRE toward the
+ * doorway, so it must stay shorter than the room's half depth — otherwise the
+ * camera pops out past the doorway wall and frames the exterior/roof.
+ * Room half depth is ROOM_SIZE / 2 (2.5); keep a margin inside that.
+ */
+const ROOM_CAM_DIST = Math.min(2.3, ROOM_SIZE / 2 - 0.2);
+const ROOM_CAM_HEIGHT = 2.9;
 /** seconds to blend between hallway and room framing (snappy on purpose) */
-const CAM_BLEND_SECONDS = 0.28;
+const CAM_BLEND_SECONDS = 0.25;
 
-/** true when the character has crossed the hallway wall plane into a room */
+/** true when the character has fully crossed the doorway into a room */
 function roomContaining(x: number, z: number): Room | null {
-  if (Math.abs(x) < HALL_W / 2 + WALL_T * 0.5) return null;
+  // doorway plane sits at HALL_W/2 + WALL_T; require the character to be past
+  // the inner face of the wall so the trigger matches the built geometry
+  if (Math.abs(x) < HALL_W / 2 + WALL_T) return null;
   for (const room of ROOMS) {
     if (sideSign(room.side) !== Math.sign(x)) continue;
-    if (Math.abs(z - room.z) <= ROOM_SIZE / 2 + 0.3) return room;
+    if (Math.abs(z - room.z) <= ROOM_SIZE / 2 + 0.2) return room;
   }
   return null;
 }
@@ -553,7 +560,7 @@ function Structure() {
             position={[s * (HALF - 0.02), 0.14, (HALL_START + HALL_END) / 2]}
             args={[0.09, 0.3, HALL_END - HALL_START]}
             radius={0.042}
-            smoothness={3}
+            smoothness={1}
             castShadow
           >
             <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
@@ -612,7 +619,7 @@ function RoomShell({ room }: { room: Room }) {
             position={[cx, 1.05, room.z + dz * (ROOM_SIZE / 2 - 0.02)]}
             args={[ROOM_SIZE - 0.02, 0.11, 0.08]}
             radius={0.038}
-            smoothness={3}
+            smoothness={1}
           >
             <meshStandardMaterial color={room.accent} roughness={0.9} />
           </RoundedBox>
@@ -633,7 +640,7 @@ function RoomShell({ room }: { room: Room }) {
           />
         </group>
       ))}
-      <RoundedBox position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.02), 1.05, room.z]} args={[0.08, 0.11, ROOM_SIZE - 0.02]} radius={0.038} smoothness={3}>
+      <RoundedBox position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.02), 1.05, room.z]} args={[0.08, 0.11, ROOM_SIZE - 0.02]} radius={0.038} smoothness={1}>
         <meshStandardMaterial color={room.accent} roughness={0.9} />
       </RoundedBox>
       <WallSkirt
@@ -655,10 +662,10 @@ function RoomShell({ room }: { room: Room }) {
           hand-arranged rather than snapped to a lattice */}
       <group position={[cx + sign * 1.5, 0, room.z + 1.4]} rotation={[0, jitter(`bed-${room.id}`, 0.05), 0]}>
         <GroundAO size={2.1} depth={2.9} opacity={0.5} />
-        <RoundedBox position={[0, 0.28, 0]} castShadow args={[1.1, 0.45, 2]} radius={0.2} smoothness={3}>
+        <RoundedBox position={[0, 0.28, 0]} castShadow args={[1.1, 0.45, 2]} radius={0.2} smoothness={1}>
           <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
         </RoundedBox>
-        <RoundedBox position={[0, 0.58, 0]} castShadow args={[1.05, 0.2, 1.9]} radius={0.095} smoothness={3}>
+        <RoundedBox position={[0, 0.58, 0]} castShadow args={[1.05, 0.2, 1.9]} radius={0.095} smoothness={1}>
           <meshStandardMaterial color={room.accent} roughness={0.9} />
         </RoundedBox>
         {/* pillow */}
@@ -676,7 +683,7 @@ function RoomShell({ room }: { room: Room }) {
       {/* desk */}
       <group position={[cx - sign * 1.8, 0, room.z + 1.9]} rotation={[0, jitter(`desk-${room.id}`, 0.06), 0]}>
         <GroundAO size={1.7} depth={1.1} opacity={0.44} />
-        <RoundedBox position={[0, 0.75, 0]} castShadow args={[1.4, 0.12, 0.7]} radius={0.055} smoothness={3}>
+        <RoundedBox position={[0, 0.75, 0]} castShadow args={[1.4, 0.12, 0.7]} radius={0.055} smoothness={1}>
           <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
         </RoundedBox>
         {[-1, 1].map((sx) => (
@@ -709,11 +716,11 @@ function DoorFrame({ room }: { room: Room }) {
       </SoftBox>
       {/* accent frame, sunk into the wall run rather than butted against it */}
       {[-1, 1].map((dz) => (
-        <RoundedBox key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.02)]} args={[WALL_T + 0.05, DOOR_H, 0.14]} radius={0.062} smoothness={3}>
+        <RoundedBox key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.02)]} args={[WALL_T + 0.05, DOOR_H, 0.14]} radius={0.062} smoothness={1}>
 <meshStandardMaterial color={room.accent} />
 </RoundedBox>
       ))}
-      <RoundedBox position={[x, DOOR_H + 0.05, room.z]} args={[WALL_T + 0.05, 0.16, DOOR_W + 0.24]} radius={0.072} smoothness={3}>
+      <RoundedBox position={[x, DOOR_H + 0.05, room.z]} args={[WALL_T + 0.05, 0.16, DOOR_W + 0.24]} radius={0.072} smoothness={1}>
 <meshStandardMaterial color={room.accent} />
 </RoundedBox>
 
@@ -722,11 +729,11 @@ function DoorFrame({ room }: { room: Room }) {
         position={[sign * (HALF + WALL_T + 0.35), DOOR_H / 2, room.z + DOOR_W / 2 + 0.6]}
         rotation={[0, sign * 0.9, 0]}
         castShadow
-       args={[0.11, DOOR_H, DOOR_W]} radius={0.052} smoothness={3}>
+       args={[0.11, DOOR_H, DOOR_W]} radius={0.052} smoothness={1}>
 <meshStandardMaterial color={COLORS.trim} />
 </RoundedBox>
       {/* warm light above the door */}
-      <RoundedBox position={[sign * (HALF - 0.12), 2.55, room.z]} args={[0.17, 0.23, 0.5]} radius={0.105} smoothness={3}>
+      <RoundedBox position={[sign * (HALF - 0.12), 2.55, room.z]} args={[0.17, 0.23, 0.5]} radius={0.105} smoothness={1}>
 <meshStandardMaterial color="#FFE6B0" emissive="#FFC773" emissiveIntensity={1.2} />
 </RoundedBox>
       <DoorLight position={[sign * (HALF - 0.4), 2.4, room.z]} />
@@ -784,7 +791,7 @@ function Speaker({ item, nearby }: { item: Interactive; nearby: boolean }) {
         castShadow
         args={[0.6, 1.1, 0.55]}
         radius={0.17}
-        smoothness={3}
+        smoothness={1}
       >
         <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
       </RoundedBox>
@@ -825,10 +832,10 @@ function BulletinBoard({ item, nearby }: { item: Interactive; nearby: boolean })
   });
   return (
     <group position={[item.x, 0, item.z]} rotation={[0, sign === -1 ? Math.PI / 2 : -Math.PI / 2, 0]}>
-      <RoundedBox position={[0, 1.55, 0]} castShadow args={[1.8, 1.2, 0.12]} radius={0.055} smoothness={3}>
+      <RoundedBox position={[0, 1.55, 0]} castShadow args={[1.8, 1.2, 0.12]} radius={0.055} smoothness={1}>
         <meshStandardMaterial color={item.room.accent} roughness={0.9} />
       </RoundedBox>
-      <RoundedBox position={[0, 1.55, 0.07]} args={[1.62, 1.02, 0.04]} radius={0.018} smoothness={2}>
+      <RoundedBox position={[0, 1.55, 0.07]} args={[1.62, 1.02, 0.04]} radius={0.018} smoothness={1}>
         <meshStandardMaterial color="#C9A57A" roughness={1} />
       </RoundedBox>
       {[
@@ -842,7 +849,7 @@ function BulletinBoard({ item, nearby }: { item: Interactive; nearby: boolean })
           rotation={[0, 0, i * 0.15 - 0.15 + jitter(`pin${i}`, 0.07)]}
           args={[0.42, 0.32, 0.02]}
           radius={0.009}
-          smoothness={2}
+          smoothness={1}
         >
           <meshStandardMaterial color={i === 2 ? "#F2E8D5" : "#FBF6EA"} roughness={1} />
         </RoundedBox>
@@ -1051,14 +1058,18 @@ function World({
       camDist.current = THREE.MathUtils.damp(camDist.current, targetDist, 12, delta);
 
       // The room rig frames the interior, not the character's back: the focus
-      // point slides toward the room centre so furniture, companion and board
-      // all stay in the shot with the character reading small in frame.
+      // point slides fully onto the room centre so furniture, companion and
+      // board all stay in the shot with the character reading small in frame.
       const focus = new THREE.Vector2(player.current.x, player.current.y);
+      let roomInnerX: number | null = null;
+      let roomSign = 0;
       if (anchorRoom && s > 0.001) {
-        const sign = sideSign(anchorRoom.side);
-        const cx = sign * (HALF + WALL_T + ROOM_SIZE / 2);
-        focus.x = THREE.MathUtils.lerp(focus.x, cx, s * 0.85);
-        focus.y = THREE.MathUtils.lerp(focus.y, anchorRoom.z, s * 0.85);
+        roomSign = sideSign(anchorRoom.side);
+        const cx = roomCenterX(anchorRoom.side);
+        focus.x = THREE.MathUtils.lerp(focus.x, cx, s);
+        focus.y = THREE.MathUtils.lerp(focus.y, anchorRoom.z, s);
+        // inner face of the doorway wall — the camera must never cross it
+        roomInnerX = roomSign * (HALF + WALL_T + 0.25);
       }
 
       const desired = new THREE.Vector3(
@@ -1066,8 +1077,14 @@ function World({
         targetHeight,
         focus.y - fwd.y * camDist.current,
       );
+      if (roomInnerX !== null && s > 0.5) {
+        // keep the boom inside the room so it looks in over the furniture
+        // instead of drifting out over the hallway roof
+        desired.x =
+          roomSign > 0 ? Math.max(desired.x, roomInnerX) : Math.min(desired.x, roomInnerX);
+      }
       // relaxed, floaty follow in the hallway; snappy once committed to a room
-      const follow = THREE.MathUtils.lerp(0.06, 0.0004, s);
+      const follow = THREE.MathUtils.lerp(0.06, 0.00005, s);
       cam.current.position.lerp(desired, 1 - Math.pow(follow, delta));
       // keep the frame anchored even during heavy lag
       const maxPlanar = camDist.current * 1.35;
@@ -1205,7 +1222,7 @@ export default function DormHallway() {
     <div className="relative h-screen w-full overflow-hidden">
       <Canvas
         shadows="soft"
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         gl={{ antialias: true }}
         camera={{ fov: 52, near: 0.5, far: 140, position: [0, 10, -8.5] }}
       >
