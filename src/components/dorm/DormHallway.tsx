@@ -33,8 +33,9 @@ const HALF = HALL_W / 2;
 const WALL_CX = HALF + WALL_T / 2;
 const PLAYER_R = 0.42;
 /** third-person boom: distance behind and height above the character */
-const CAM_DIST = 5;
-const CAM_HEIGHT = 2.5;
+const CAM_DIST = 7.4;
+const CAM_HEIGHT = 4.2;
+const WALK_SPEED = 3.2;
 
 
 /** Split a wall run along z into segments, skipping doorway gaps. */
@@ -179,6 +180,130 @@ function cameraClearance(from: THREE.Vector2, to: THREE.Vector2, pad = PLAYER_R)
     if (t0 <= t1 && t0 >= 0 && t0 < best) best = t0;
   }
   return THREE.MathUtils.clamp(best * 0.96, 0.24, 1);
+}
+
+/** true when a straight walk from a→b never enters a wall AABB (padded) */
+function segmentClear(a: THREE.Vector2, b: THREE.Vector2, pad = PLAYER_R * 0.95) {
+  const dx = b.x - a.x;
+  const dz = b.y - a.y;
+  for (const w of WALLS) {
+    const hx = w.sx / 2 + pad;
+    const hz = w.sz / 2 + pad;
+    let t0 = 0;
+    let t1 = 1;
+    for (const [o, d, lo, hi] of [
+      [a.x, dx, w.cx - hx, w.cx + hx],
+      [a.y, dz, w.cz - hz, w.cz + hz],
+    ] as [number, number, number, number][]) {
+      if (Math.abs(d) < 1e-6) {
+        if (o < lo || o > hi) {
+          t0 = 1;
+          t1 = 0;
+          break;
+        }
+        continue;
+      }
+      let ta = (lo - o) / d;
+      let tb = (hi - o) / d;
+      if (ta > tb) [ta, tb] = [tb, ta];
+      t0 = Math.max(t0, ta);
+      t1 = Math.min(t1, tb);
+    }
+    if (t0 <= t1) return false;
+  }
+  return true;
+}
+
+/** static waypoint lattice: hallway spine + each doorway + each room centre */
+const WAYPOINTS: THREE.Vector2[] = (() => {
+  const pts: THREE.Vector2[] = [];
+  for (let z = HALL_START + 1; z <= HALL_END - 1; z += 2) pts.push(new THREE.Vector2(0, z));
+  for (const room of ROOMS) {
+    const sign = sideSign(room.side);
+    pts.push(new THREE.Vector2(0, room.z));
+    pts.push(new THREE.Vector2(sign * (HALF + WALL_T / 2), room.z));
+    pts.push(new THREE.Vector2(sign * (HALF + WALL_T + 0.8), room.z));
+    pts.push(new THREE.Vector2(roomCenterX(room.side), room.z));
+    for (const dz of [-1.5, 1.5])
+      pts.push(new THREE.Vector2(roomCenterX(room.side), room.z + dz));
+  }
+  return pts;
+})();
+
+/** straight line when possible, otherwise a short waypoint route around walls */
+function findPath(from: THREE.Vector2, to: THREE.Vector2): THREE.Vector2[] {
+  if (segmentClear(from, to)) return [to.clone()];
+
+  const nodes = [from, ...WAYPOINTS, to];
+  const n = nodes.length;
+  const goal = n - 1;
+  const dist = new Array<number>(n).fill(Infinity);
+  const prev = new Array<number>(n).fill(-1);
+  const done = new Array<boolean>(n).fill(false);
+  dist[0] = 0;
+
+  for (;;) {
+    let u = -1;
+    for (let i = 0; i < n; i++) if (!done[i] && dist[i]! < (u < 0 ? Infinity : dist[u]!)) u = i;
+    if (u < 0 || u === goal) break;
+    done[u] = true;
+    for (let v = 0; v < n; v++) {
+      if (done[v] || v === u) continue;
+      const a = nodes[u]!;
+      const b = nodes[v]!;
+      const d = a.distanceTo(b);
+      if (d > 9) continue;
+      if (!segmentClear(a, b)) continue;
+      if (dist[u]! + d < dist[v]!) {
+        dist[v] = dist[u]! + d;
+        prev[v] = u;
+      }
+    }
+  }
+
+  if (prev[goal]! < 0) return [];
+  const out: THREE.Vector2[] = [];
+  for (let i = goal; i > 0; i = prev[i]!) out.unshift(nodes[i]!.clone());
+  return out;
+}
+
+/** flat ground marker that fades out where the player tapped */
+function MoveMarker({
+  markerRef,
+}: {
+  markerRef: React.RefObject<{ x: number; z: number; born: number } | null>;
+}) {
+  const group = useRef<THREE.Group>(null);
+  const inner = useRef<THREE.Mesh>(null);
+  useFrame(() => {
+    const g = group.current;
+    if (!g) return;
+    const m = markerRef.current;
+    if (!m) {
+      g.visible = false;
+      return;
+    }
+    const age = (performance.now() - m.born) / 1000;
+    if (age > 1.1) {
+      g.visible = false;
+      return;
+    }
+    g.visible = true;
+    g.position.set(m.x, 0.035, m.z);
+    const k = 1 - age / 1.1;
+    const s = 0.75 + (1 - k) * 0.5;
+    g.scale.setScalar(s);
+    const mat = inner.current?.material as THREE.MeshBasicMaterial | undefined;
+    if (mat) mat.opacity = k * 0.45;
+  });
+  return (
+    <group ref={group} rotation={[-Math.PI / 2, 0, 0]} visible={false}>
+      <mesh ref={inner}>
+        <ringGeometry args={[0.34, 0.46, 32]} />
+        <meshBasicMaterial color="#FFF3DC" transparent opacity={0.45} depthWrite={false} />
+      </mesh>
+    </group>
+  );
 }
 
 
@@ -530,6 +655,20 @@ function World({
   const camYaw = useRef(0);
   const camDist = useRef(CAM_DIST);
 
+  // --- click/tap-to-move state (additive: WASD input cancels it instantly)
+  const path = useRef<THREE.Vector2[]>([]);
+  const marker = useRef<{ x: number; z: number; born: number } | null>(null);
+  const goTo = (x: number, z: number) => {
+    const dest = new THREE.Vector2(x, z);
+    resolveCollisions(dest, PLAYER_R * 1.02);
+    const route = findPath(player.current, dest);
+    if (!route.length) return;
+    path.current = route;
+    marker.current = { x: dest.x, z: dest.y, born: performance.now() };
+  };
+
+
+
   // --- ambience audio: footsteps, idle cue, muffled music bleeding from doors
   const audio = useRef<DormAudio | null>(null);
   if (!audio.current) {
@@ -570,7 +709,7 @@ function World({
     let dYaw = targetYaw - camYaw.current;
     while (dYaw > Math.PI) dYaw -= Math.PI * 2;
     while (dYaw < -Math.PI) dYaw += Math.PI * 2;
-    camYaw.current += dYaw * (1 - Math.pow(0.02, delta));
+    camYaw.current += dYaw * (1 - Math.pow(0.25, delta));
 
     // camera-relative basis on the XZ plane (y deliberately zeroed: the rig
     // looks slightly downward, and that pitch must not bleed into movement)
@@ -584,8 +723,11 @@ function World({
       fwd.x * iz + right.x * ix,
       fwd.y * iz + right.y * ix,
     );
-    const moving = ix !== 0 || iz !== 0;
-    if (moving) {
+    const keyInput = ix !== 0 || iz !== 0;
+    // WASD always wins: pressing a key cancels any in-progress auto-walk
+    if (keyInput) path.current = [];
+    let moving = keyInput;
+    if (keyInput) {
       // normalize first so diagonals aren't faster than cardinals
       move.normalize();
       const dir = move.clone();
@@ -611,7 +753,26 @@ function World({
       player.current.y += move.y;
       resolveCollisions(player.current);
       facing.current.lerp(dir, 1 - Math.pow(0.0005, delta)).normalize();
+    } else if (path.current.length) {
+      // ---- 2b. click/tap auto-walk along the resolved waypoint route
+      const wp = path.current[0]!;
+      const to = new THREE.Vector2(wp.x - player.current.x, wp.y - player.current.y);
+      const remaining = to.length();
+      if (remaining < 0.12) {
+        path.current.shift();
+      } else {
+        const dir = to.clone().normalize();
+        const step = Math.min(WALK_SPEED * delta, remaining);
+        player.current.x += dir.x * step;
+        resolveCollisions(player.current);
+        player.current.y += dir.y * step;
+        resolveCollisions(player.current);
+        facing.current.lerp(dir, 1 - Math.pow(0.0005, delta)).normalize();
+        moving = true;
+      }
     }
+
+
 
 
     if (group.current) {
@@ -643,25 +804,32 @@ function World({
       const t = cameraClearance(player.current, ideal);
       const dist = CAM_DIST * t;
       // damp the boom length so wall pull-ins ease instead of popping
-      camDist.current = THREE.MathUtils.damp(camDist.current, dist, 9, delta);
+      camDist.current = THREE.MathUtils.damp(camDist.current, dist, 8, delta);
       // clamp: never let the boom lag further than a small margin behind target
-      camDist.current = THREE.MathUtils.clamp(camDist.current, dist - 0.5, CAM_DIST);
+      camDist.current = THREE.MathUtils.clamp(camDist.current, Math.min(dist, 1.6), CAM_DIST);
 
       const desired = new THREE.Vector3(
         player.current.x - fwd.x * camDist.current,
-        1.2 + (CAM_HEIGHT - 1.2) * (camDist.current / CAM_DIST),
+        1.5 + (CAM_HEIGHT - 1.5) * (camDist.current / CAM_DIST),
         player.current.y - fwd.y * camDist.current,
       );
-      cam.current.position.lerp(desired, 1 - Math.pow(0.0008, delta));
-      // hard clamp against overshoot/drift on fast direction changes
+      // relaxed, floaty follow rather than a snappy chase
+      cam.current.position.lerp(desired, 1 - Math.pow(0.02, delta));
+      // hard clamp: the camera may never sit further out than the clear boom
+      // length, otherwise follow-lag drags it through a wall
       const planar = new THREE.Vector2(
         cam.current.position.x - player.current.x,
         cam.current.position.z - player.current.y,
       );
-      if (planar.length() > CAM_DIST + 0.4) {
-        planar.setLength(CAM_DIST + 0.4);
+      const maxPlanar = Math.min(CAM_DIST + 0.4, Math.max(dist, 1.2));
+      if (planar.length() > maxPlanar) {
+        planar.setLength(maxPlanar);
         cam.current.position.x = player.current.x + planar.x;
         cam.current.position.z = player.current.y + planar.y;
+        cam.current.position.y = Math.min(
+          cam.current.position.y,
+          1.5 + (CAM_HEIGHT - 1.5) * (maxPlanar / CAM_DIST),
+        );
       }
       // look target depends only on the character's position
       lookAt.current.set(player.current.x, 1.15, player.current.y);
@@ -702,31 +870,68 @@ function World({
       <DaylightRig />
 
 
+      {/* invisible ground pick-plane: click/tap anywhere walkable to walk there */}
+      <mesh
+        position={[0, 0.02, (HALL_START + HALL_END) / 2]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        onClick={(e) => {
+          e.stopPropagation();
+          goTo(e.point.x, e.point.z);
+        }}
+      >
+        <planeGeometry args={[40, HALL_END - HALL_START + 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <MoveMarker markerRef={marker} />
+
       <Structure />
       <HallwayDressing />
       <LockedDoor playerRef={player} />
       {ROOMS.map((room) => (
         <group key={room.id}>
           <RoomShell room={room} />
-          <DoorFrame room={room} />
+          <group
+            onClick={(e) => {
+              e.stopPropagation();
+              goTo(roomCenterX(room.side), room.z);
+            }}
+          >
+            <DoorFrame room={room} />
+          </group>
         </group>
       ))}
-      {INTERACTIVES.map((item) =>
-        item.kind === "speaker" ? (
-          <Speaker key={item.key} item={item} nearby={nearby.includes(item.key)} />
-        ) : item.kind === "board" ? (
-          <BulletinBoard key={item.key} item={item} nearby={nearby.includes(item.key)} />
-        ) : (
-          <Companion
+      {INTERACTIVES.map((item) => {
+        const toCentre = new THREE.Vector2(
+          roomCenterX(item.room.side) - item.x,
+          item.room.z - item.z,
+        );
+        if (toCentre.lengthSq() < 1e-4) toCentre.set(0, 1);
+        toCentre.setLength(1.0);
+        return (
+          <group
             key={item.key}
-            room={item.room}
-            x={item.x}
-            z={item.z}
-            nearby={nearby.includes(item.key)}
-          />
-        ),
-      )}
+            onClick={(e) => {
+              e.stopPropagation();
+              goTo(item.x + toCentre.x, item.z + toCentre.y);
+            }}
+          >
+            {item.kind === "speaker" ? (
+              <Speaker item={item} nearby={nearby.includes(item.key)} />
+            ) : item.kind === "board" ? (
+              <BulletinBoard item={item} nearby={nearby.includes(item.key)} />
+            ) : (
+              <Companion
+                room={item.room}
+                x={item.x}
+                z={item.z}
+                nearby={nearby.includes(item.key)}
+              />
+            )}
+          </group>
+        );
+      })}
       <Character groupRef={group} />
+
     </>
   );
 }
@@ -752,14 +957,14 @@ export default function DormHallway() {
         shadows
         dpr={[1, 2]}
         gl={{ antialias: true }}
-        camera={{ fov: 58, near: 0.5, far: 80, position: [0, 2.5, -5] }}
+        camera={{ fov: 58, near: 0.5, far: 90, position: [0, 4.2, -7.4] }}
       >
         <World onNearby={() => {}} onActive={setActiveKey} />
       </Canvas>
 
       <div className="pointer-events-none absolute left-6 top-6 select-none">
         <h1 className="dorm-title">Dorm Hallway</h1>
-        <p className="dorm-sub">WASD to walk · step up to a speaker or board</p>
+        <p className="dorm-sub">Click anywhere to walk · WASD also works</p>
       </div>
 
       {active && active.kind === "speaker" && (
