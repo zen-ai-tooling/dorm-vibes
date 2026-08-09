@@ -36,6 +36,21 @@ const PLAYER_R = 0.42;
 // elevated "diorama" rig: high above the ceiling plane looking down at ~46deg
 const CAM_DIST = 8.5;
 const CAM_HEIGHT = 10;
+/** intimate in-room rig: closer + lower so decor and text read clearly */
+const ROOM_CAM_DIST = 4.4;
+const ROOM_CAM_HEIGHT = 3.1;
+/** seconds to blend between hallway and room framing */
+const CAM_BLEND_SECONDS = 0.75;
+
+/** true when the character has crossed the hallway wall plane into a room */
+function roomContaining(x: number, z: number): Room | null {
+  if (Math.abs(x) < HALL_W / 2 + WALL_T * 0.5) return null;
+  for (const room of ROOMS) {
+    if (sideSign(room.side) !== Math.sign(x)) continue;
+    if (Math.abs(z - room.z) <= ROOM_SIZE / 2 + 0.3) return room;
+  }
+  return null;
+}
 const WALK_SPEED = 3.2;
 
 
