@@ -56,7 +56,7 @@ export function CommunityBoard() {
           Floor Board
         </div>
       </Html>
-      <Html position={[0, 1.7, 0.14]} center distanceFactor={5} zIndexRange={[9, 0]}>
+      <Html position={[0, 1.7, 0.14]} center distanceFactor={3.4} zIndexRange={[9, 0]}>
         <div className="dorm-corkboard">
           {COMMUNITY_BOARD.items.map((it) => (
             <div className="dorm-corknote" key={it.text}>
@@ -179,13 +179,13 @@ export function LostAndFound() {
 export function StringLights() {
   const ref = useRef<THREE.Group>(null);
   const bulbs: { z: number; x: number; y: number; i: number }[] = [];
-  const step = 0.85;
+  const step = 1.25;
   const count = Math.floor((HALL_END - HALL_START - 1) / step);
   for (let i = 0; i < count; i++) {
     const z = HALL_START + 0.8 + i * step;
     const side = i % 2 === 0 ? -1 : 1;
-    const sag = Math.sin((i % 4) / 4 * Math.PI) * 0.12;
-    bulbs.push({ z, x: side * (HALF - 0.55), y: HALL_H - 0.18 - sag, i });
+    const sag = 0.06 + (i % 2) * 0.05;
+    bulbs.push({ z, x: side * 0.5, y: HALL_H - 0.16 - sag, i });
   }
   useFrame(({ clock }) => {
     if (!ref.current) return;
@@ -211,7 +211,7 @@ export function StringLights() {
         return (
           <mesh key={`w${i}`} position={[mx, my, mz]} rotation={[0, yaw, 0]}>
             <boxGeometry args={[0.02, 0.02, len]} />
-            <meshStandardMaterial color="#4A3B2E" />
+            <meshStandardMaterial color="#6B5340" />
           </mesh>
         );
       })}
