@@ -794,34 +794,69 @@ function World({
       group.current.rotation.z = idleAmt * Math.sin(t * 0.9) * 0.02;
     }
 
-    // ---- 3. camera placement (elevated diorama rig)
+    // ---- 3. camera placement: diorama in the hallway, intimate inside a room
     {
-      // The rig sits above the ceiling plane, so hallway walls can never come
-      // between the camera and the character: no boom pull-in is needed and
-      // the framing stays consistent through doorway transitions.
-      camDist.current = THREE.MathUtils.damp(camDist.current, CAM_DIST, 4, delta);
+      // same wall-plane/room-bounds signal the proximity system rides on
+      const wantRoom = roomContaining(player.current.x, player.current.y) ? 1 : 0;
+      // short, deliberate lean-in/out rather than an instant cut
+      const step = delta / CAM_BLEND_SECONDS;
+      roomBlend.current = THREE.MathUtils.clamp(
+        roomBlend.current + (wantRoom ? step : -step),
+        0,
+        1,
+      );
+      const b = roomBlend.current;
+      const s = b * b * (3 - 2 * b); // smoothstep the blend curve
+
+      let targetDist = THREE.MathUtils.lerp(CAM_DIST, ROOM_CAM_DIST, s);
+      const targetHeight = THREE.MathUtils.lerp(CAM_HEIGHT, ROOM_CAM_HEIGHT, s);
+
+      // obstruction: at the lower in-room height the boom can hit walls, so
+      // pull it in until the line back to the character is clear
+      if (s > 0.05) {
+        const from = new THREE.Vector2(player.current.x, player.current.y);
+        for (let i = 0; i < 8; i++) {
+          const to = new THREE.Vector2(
+            player.current.x - fwd.x * targetDist,
+            player.current.y - fwd.y * targetDist,
+          );
+          // only enforce clearance proportionally to how "in-room" we are
+          if (segmentClear(from, to, 0.45 * s)) break;
+          targetDist -= 0.35;
+          if (targetDist < 1.9) {
+            targetDist = 1.9;
+            break;
+          }
+        }
+      }
+
+      camDist.current = THREE.MathUtils.damp(camDist.current, targetDist, 6, delta);
 
       const desired = new THREE.Vector3(
         player.current.x - fwd.x * camDist.current,
-        CAM_HEIGHT,
+        targetHeight,
         player.current.y - fwd.y * camDist.current,
       );
-      // very relaxed, floaty follow — observational, not a chase cam
-      cam.current.position.lerp(desired, 1 - Math.pow(0.06, delta));
+      // relaxed, floaty follow — observational, not a chase cam (a touch
+      // tighter inside a room so the closer framing stays readable)
+      const follow = THREE.MathUtils.lerp(0.06, 0.02, s);
+      cam.current.position.lerp(desired, 1 - Math.pow(follow, delta));
       // keep the character comfortably framed even during heavy lag
+      const maxPlanar = camDist.current * 1.35;
       const planar = new THREE.Vector2(
         cam.current.position.x - player.current.x,
         cam.current.position.z - player.current.y,
       );
-      if (planar.length() > CAM_DIST * 1.35) {
-        planar.setLength(CAM_DIST * 1.35);
+      if (planar.length() > maxPlanar) {
+        planar.setLength(maxPlanar);
         cam.current.position.x = player.current.x + planar.x;
         cam.current.position.z = player.current.y + planar.y;
       }
       // look target depends only on the character's position
-      lookAt.current.set(player.current.x, 1.15, player.current.y);
+      lookAt.current.set(player.current.x, THREE.MathUtils.lerp(1.15, 1.35, s), player.current.y);
       cam.current.lookAt(lookAt.current);
     }
+
 
 
 
