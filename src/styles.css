@@ -179,6 +179,56 @@
   box-shadow: 0 2px 0 oklch(0.4 0.05 60 / 25%);
 }
 
+.dorm-plaque-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding-left: 6px;
+  border-left: 1px solid oklch(0.4 0.05 60 / 25%);
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.dorm-live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  animation: dorm-live 1.6s ease-in-out infinite;
+}
+
+@keyframes dorm-live {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.dorm-companion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.dorm-companion-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.dorm-companion-blurb {
+  font-size: 0.85rem;
+  color: var(--dorm-ink-soft);
+}
+
+
 .dorm-overlay {
   position: absolute;
   right: 2rem;

@@ -10,6 +10,28 @@ export type BulletinItem = {
   image?: string;
 };
 
+/** Low-poly companion variants that have a model in Companion.tsx */
+export type CompanionVariant = "succulent" | "fern" | "cat" | "dog";
+
+export type Companion = {
+  type: "pet" | "plant";
+  name: string;
+  blurb: string;
+  variant: CompanionVariant;
+};
+
+/** Decal shapes that have a model in DoorDecor.tsx */
+export type StickerId = "note" | "star" | "paw" | "heart" | "planet" | "leaf";
+
+export type DoorConfig = {
+  /** owner name shown on the nameplate */
+  owner: string;
+  /** 2-3 decals, rendered by mapping over this list */
+  stickers: StickerId[];
+  /** mock presence flag — placeholder for the real presence system */
+  isActive: boolean;
+};
+
 export type Room = {
   id: string;
   name: string;
@@ -19,6 +41,8 @@ export type Room = {
   side: "left" | "right";
   songs: Song[];
   bulletin: BulletinItem[];
+  companion: Companion;
+  door: DoorConfig;
 };
 
 export const ROOMS: Room[] = [
@@ -40,6 +64,13 @@ export const ROOMS: Room[] = [
       { text: "Learning to skate", kind: "interest" },
       { text: "Rooftop hang — Fri 8pm", kind: "event", image: flyerRooftop },
     ],
+    companion: {
+      type: "plant",
+      name: "Spike",
+      blurb: "Low-maintenance, high standards.",
+      variant: "succulent",
+    },
+    door: { owner: "You", stickers: ["note", "star"], isActive: true },
   },
   {
     id: "sam",
@@ -59,6 +90,13 @@ export const ROOMS: Room[] = [
       { text: "Started pottery class", kind: "interest" },
       { text: "Gallery opening — Sat 6pm", kind: "event", image: flyerGallery },
     ],
+    companion: {
+      type: "pet",
+      name: "Nebula",
+      blurb: "Sleeps on paperbacks, knocks clay mugs off the wheel.",
+      variant: "cat",
+    },
+    door: { owner: "Sam", stickers: ["planet", "star", "leaf"], isActive: false },
   },
   {
     id: "jordan",
@@ -78,8 +116,16 @@ export const ROOMS: Room[] = [
       { text: "Training for a half marathon", kind: "interest" },
       { text: "Show at the warehouse — Sun 9pm", kind: "event", image: flyerWarehouse },
     ],
+    companion: {
+      type: "pet",
+      name: "Bassline",
+      blurb: "Four-on-the-floor tail wag, will out-run you at 6am.",
+      variant: "dog",
+    },
+    door: { owner: "Jordan", stickers: ["note", "paw", "heart"], isActive: false },
   },
 ];
+
 
 // --- Scene geometry constants (1 unit ~= 1 meter) ---
 export const HALL_W = 4;
