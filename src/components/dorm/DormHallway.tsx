@@ -33,9 +33,9 @@ const HALF = HALL_W / 2;
 const WALL_CX = HALF + WALL_T / 2;
 const PLAYER_R = 0.42;
 /** third-person boom: distance behind and height above the character */
-// elevated "diorama" rig: high above the ceiling plane looking down at ~38deg
-const CAM_DIST = 10;
-const CAM_HEIGHT = 9;
+// elevated "diorama" rig: high above the ceiling plane looking down at ~46deg
+const CAM_DIST = 8.5;
+const CAM_HEIGHT = 10;
 const WALK_SPEED = 3.2;
 
 
@@ -909,7 +909,7 @@ export default function DormHallway() {
         shadows
         dpr={[1, 2]}
         gl={{ antialias: true }}
-        camera={{ fov: 52, near: 0.5, far: 140, position: [0, 9, -10] }}
+        camera={{ fov: 52, near: 0.5, far: 140, position: [0, 10, -8.5] }}
       >
         <World onNearby={() => {}} onActive={setActiveKey} />
       </Canvas>
