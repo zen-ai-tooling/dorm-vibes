@@ -118,6 +118,7 @@ export const ROOMS: Room[] = [
       variant: "cat",
     },
     door: { owner: "Sam", stickers: ["planet", "star", "leaf"], isActive: false },
+    decor: { wallpaper: "arches", wallpaperColor: "#8A4630", posters: ["cosmos", "botanic"] },
   },
   {
     id: "jordan",
