@@ -11,6 +11,7 @@ import {
   type Room,
   type WallpaperId,
 } from "@/lib/dorm-data";
+import { Std } from "./materials";
 
 /**
  * Swappable room decor: wallpaper + posters.
@@ -346,7 +347,7 @@ function Poster({
         {/* paper edge, then the printed face a hair in front of it */}
         <mesh>
           <planeGeometry args={[w + 0.05, h + 0.05]} />
-          <meshStandardMaterial color="#F6EEDD" roughness={1} />
+          <Std color="#F6EEDD" roughness={1} />
         </mesh>
         <mesh position={[0, 0, 0.006]}>
           <planeGeometry args={[w, h]} />
@@ -356,7 +357,7 @@ function Poster({
         {[-1, 1].map((s) => (
           <mesh key={s} position={[s * w * 0.42, h * 0.5, 0.01]} rotation={[0, 0, s * 0.5]}>
             <planeGeometry args={[0.16, 0.06]} />
-            <meshStandardMaterial color="#EFE3C8" transparent opacity={0.75} roughness={1} />
+            <Std color="#EFE3C8" transparent opacity={0.75} roughness={1} />
           </mesh>
         ))}
       </group>

@@ -1,0 +1,75 @@
+import * as THREE from "three";
+
+/**
+ * Shared material pool.
+ *
+ * The scene draws ~600 meshes, but they only use a few dozen distinct
+ * color/finish combinations. Inline <meshStandardMaterial> gives every mesh
+ * its own material instance, which means three.js compiles/binds a separate
+ * shader program + uniform set per object — the dominant cost in this scene.
+ *
+ * <Std> / <Basic> look and behave exactly like the inline materials they
+ * replace, but hand back a cached instance keyed by their props, so all
+ * meshes that share a look also share one program and one uniform upload.
+ *
+ * IMPORTANT: never mutate a material obtained from here at runtime (it is
+ * shared). Meshes that animate their material keep an inline material.
+ */
+
+type Props = Record<string, unknown>;
+
+const stdCache = new Map<string, THREE.MeshStandardMaterial>();
+const basicCache = new Map<string, THREE.MeshBasicMaterial>();
+
+function keyOf(p: Props) {
+  return Object.keys(p)
+    .sort()
+    .map((k) => `${k}=${String(p[k])}`)
+    .join("|");
+}
+
+function apply(mat: THREE.Material, p: Props) {
+  for (const [k, v] of Object.entries(p)) {
+    if (v === undefined) continue;
+    if (k === "color" || k === "emissive") {
+      (mat as unknown as Record<string, THREE.Color>)[k] = new THREE.Color(v as string);
+    } else {
+      (mat as unknown as Props)[k] = v;
+    }
+  }
+  return mat;
+}
+
+export function getStd(p: Props): THREE.MeshStandardMaterial {
+  const k = keyOf(p);
+  let m = stdCache.get(k);
+  if (!m) {
+    m = apply(new THREE.MeshStandardMaterial(), p) as THREE.MeshStandardMaterial;
+    stdCache.set(k, m);
+  }
+  return m;
+}
+
+export function getBasic(p: Props): THREE.MeshBasicMaterial {
+  const k = keyOf(p);
+  let m = basicCache.get(k);
+  if (!m) {
+    m = apply(new THREE.MeshBasicMaterial(), p) as THREE.MeshBasicMaterial;
+    basicCache.set(k, m);
+  }
+  return m;
+}
+
+/** Drop-in for <meshStandardMaterial> when the material is never mutated. */
+export function Std(props: Props) {
+  return <primitive object={getStd(props)} attach="material" />;
+}
+
+/** Drop-in for <meshBasicMaterial> when the material is never mutated. */
+export function Basic(props: Props) {
+  return <primitive object={getBasic(props)} attach="material" />;
+}
+
+export function materialStats() {
+  return { std: stdCache.size, basic: basicCache.size };
+}

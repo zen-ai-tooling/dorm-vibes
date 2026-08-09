@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { ROOM_SIZE, roomCenterX, sideSign, type Room } from "@/lib/dorm-data";
 import { deriveMood } from "@/lib/room-mood";
+import { Basic } from "./materials";
 
 const SPREAD = ROOM_SIZE - 1.6;
 /** particles stay inside a calm band between head height and the ceiling */
@@ -95,7 +96,7 @@ export function RoomMood({ room }: { room: Room }) {
         renderOrder={3}
       >
         <sphereGeometry args={[1, 6, 4]} />
-        <meshBasicMaterial
+        <Basic
           color={mood.particleColor}
           transparent
           opacity={0.38}

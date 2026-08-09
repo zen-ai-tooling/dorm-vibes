@@ -15,6 +15,7 @@ import {
   LOST_AND_FOUND,
   sideSign,
 } from "@/lib/dorm-data";
+import { Basic, Std } from "./materials";
 
 const HALF = HALL_W / 2;
 
@@ -27,11 +28,11 @@ export function CommunityBoard() {
     <group position={[x, 0, z]} rotation={[0, sign === -1 ? Math.PI / 2 : -Math.PI / 2, 0]}>
       {/* frame */}
       <SoftBox position={[0, 1.7, 0]} args={[2.2, 1.4, 0.1]} radius={0.045}>
-        <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
+        <Std color={COLORS.trim} roughness={0.95} />
       </SoftBox>
       {/* cork face */}
       <SoftBox position={[0, 1.7, 0.07]} args={[2, 1.2, 0.04]} radius={0.018}>
-        <meshStandardMaterial color="#C08E55" roughness={1} />
+        <Std color="#C08E55" roughness={1} />
       </SoftBox>
       {/* pinned paper slips */}
       {[
@@ -48,12 +49,12 @@ export function CommunityBoard() {
           radius={0.008}
          
         >
-          <meshStandardMaterial color={i % 2 ? "#FBF6EA" : "#F2E8D5"} roughness={1} />
+          <Std color={i % 2 ? "#FBF6EA" : "#F2E8D5"} roughness={1} />
         </SoftBox>
       ))}
       {/* small header sign */}
       <SoftBox position={[0, 2.5, 0]} args={[1.1, 0.22, 0.12]} radius={0.05}>
-        <meshStandardMaterial color="#7C9C8B" roughness={0.9} />
+        <Std color="#7C9C8B" roughness={0.9} />
       </SoftBox>
       <Html position={[0, 2.5, 0.1]} center distanceFactor={7} zIndexRange={[10, 0]}>
         <div className="dorm-plaque" style={{ borderColor: "#7C9C8B" }}>
@@ -92,11 +93,11 @@ export function VendingMachine() {
     <group position={[x, 0, z]}>
       <GroundAO size={1.9} depth={2.1} opacity={0.5} />
       <SoftBox position={[0, 0.95, 0]} args={[0.66, 1.9, 1.1]} radius={0.13} castShadow receiveShadow>
-        <meshStandardMaterial color="#3E6B63" roughness={0.85} />
+        <Std color="#3E6B63" roughness={0.85} />
       </SoftBox>
       {/* glass front */}
       <SoftBox position={[-sign * 0.3, 1.15, 0.06]} args={[0.08, 1.2, 0.8]} radius={0.035}>
-        <meshStandardMaterial color="#BFE3DC" transparent opacity={0.55} roughness={0.4} />
+        <Std color="#BFE3DC" transparent opacity={0.55} roughness={0.4} />
       </SoftBox>
       {/* snack rows */}
       {[0, 1, 2].map((r) =>
@@ -109,17 +110,17 @@ export function VendingMachine() {
             radius={0.035}
            
           >
-            <meshStandardMaterial color={["#E07A5F", "#F2CC8F", "#9B6BC7"][(r + c + 3) % 3]!} roughness={0.9} />
+            <Std color={["#E07A5F", "#F2CC8F", "#9B6BC7"][(r + c + 3) % 3]!} roughness={0.9} />
           </SoftBox>
         )),
       )}
       {/* dispensing tray */}
       <SoftBox position={[-sign * 0.3, 0.36, 0]} args={[0.08, 0.28, 0.7]} radius={0.035}>
-        <meshStandardMaterial color="#22322F" roughness={0.95} />
+        <Std color="#22322F" roughness={0.95} />
       </SoftBox>
       {/* glow strip */}
       <SoftBox position={[-sign * 0.32, 1.82, 0]} args={[0.05, 0.12, 0.9]} radius={0.024}>
-        <meshStandardMaterial color="#FFF0C4" emissive="#FFD07A" emissiveIntensity={1.1} />
+        <Std color="#FFF0C4" emissive="#FFD07A" emissiveIntensity={1.1} />
       </SoftBox>
       <pointLight position={[-sign * 0.7, 1.5, 0]} color="#BFE3DC" intensity={2.2} distance={3.2} decay={2} />
     </group>
@@ -135,26 +136,26 @@ export function LostAndFound() {
     <group position={[x, 0, z]}>
       <GroundAO size={1.6} depth={1.8} opacity={0.45} />
       <SoftBox position={[0, 0.3, 0]} args={[0.7, 0.6, 0.9]} radius={0.14} receiveShadow>
-        <meshStandardMaterial color="#8C6A4A" roughness={0.95} />
+        <Std color="#8C6A4A" roughness={0.95} />
       </SoftBox>
       {/* rim */}
       <mesh position={[0, 0.63, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[1, 1.25, 1]}>
         <torusGeometry args={[0.36, 0.045, 6, 20]} />
-        <meshStandardMaterial color={COLORS.trim} roughness={0.9} />
+        <Std color={COLORS.trim} roughness={0.9} />
       </mesh>
       {/* spilling-over odds and ends */}
       <SoftBox position={[-sign * 0.12, 0.74, 0.18]} rotation={[0.06, 0.4, 0.2]} args={[0.3, 0.16, 0.34]} radius={0.06}>
-        <meshStandardMaterial color="#E07A5F" roughness={0.95} />
+        <Std color="#E07A5F" roughness={0.95} />
       </SoftBox>
       <SoftBox position={[sign * 0.1, 0.72, -0.2]} rotation={[0.2, -0.3, 0.05]} args={[0.26, 0.12, 0.26]} radius={0.05}>
-        <meshStandardMaterial color="#4A9B8E" roughness={0.95} />
+        <Std color="#4A9B8E" roughness={0.95} />
       </SoftBox>
       <SoftBox position={[0, 0.78, -0.02]} rotation={[0.04, 0.8, 0.1]} args={[0.22, 0.2, 0.2]} radius={0.07}>
-        <meshStandardMaterial color="#F2CC8F" roughness={0.95} />
+        <Std color="#F2CC8F" roughness={0.95} />
       </SoftBox>
       {/* handwritten tag */}
       <SoftBox position={[-sign * 0.36, 0.36, 0]} rotation={[0, sign === -1 ? Math.PI / 2 : -Math.PI / 2, 0.05]} args={[0.42, 0.24, 0.02]} radius={0.009}>
-        <meshStandardMaterial color="#FBF6EA" roughness={1} />
+        <Std color="#FBF6EA" roughness={1} />
       </SoftBox>
       <Html
         position={[-sign * 0.4, 0.36, 0]}
@@ -247,7 +248,7 @@ export function StringLights() {
         return (
           <mesh key={`w${i}`} position={[w.p.x, w.p.y, w.p.z]} rotation={[-w.pitch + Math.PI / 2, yaw, 0]}>
             <cylinderGeometry args={[0.009, 0.009, w.len + 0.01, 5]} />
-            <meshStandardMaterial color="#6B5340" />
+            <Std color="#6B5340" />
           </mesh>
         );
       })}
@@ -270,7 +271,7 @@ export function StringLights() {
       {bulbs.map((b) => (
         <mesh key={`h${b.i}`} position={[b.x, b.y, b.z]} renderOrder={-1}>
           <sphereGeometry args={[0.062, 8, 6]} />
-          <meshBasicMaterial
+          <Basic
             color="#FFCE95"
             transparent
             opacity={0.12}
@@ -315,11 +316,11 @@ export function HallwayDressing() {
         radius={0.09}
        
       >
-        <meshStandardMaterial color="#9C8264" roughness={0.95} />
+        <Std color="#9C8264" roughness={0.95} />
       </SoftBox>
       <mesh position={[0, HALL_H / 2, HALL_START + 0.01]} visible={false}>
         <boxGeometry args={[HALL_W, HALL_H, WALL_T]} />
-        <meshStandardMaterial color={COLORS.wall} />
+        <Std color={COLORS.wall} />
       </mesh>
     </group>
   );

@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { COLORS, type Room } from "@/lib/dorm-data";
 import { deriveMood } from "@/lib/room-mood";
 import { GroundAO, SoftBox, jitter } from "./soft";
+import { Std } from "./materials";
 
 /**
  * Turntable-console speaker: the room's musical focal point.
@@ -55,21 +56,21 @@ export function Speaker({
       <group rotation={[0, skew, 0]}>
         {/* stand */}
         <SoftBox position={[0, 0.3, 0]} args={[0.78, 0.6, 0.6]} radius={0.12} receiveShadow>
-          <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
+          <Std color={COLORS.trim} roughness={0.95} />
         </SoftBox>
         {/* grille cabinet with a dotted speaker face */}
         <SoftBox position={[0, 0.62, 0.02]} args={[0.86, 0.28, 0.64]} radius={0.1}>
-          <meshStandardMaterial color="#3A2C22" roughness={0.9} />
+          <Std color="#3A2C22" roughness={0.9} />
         </SoftBox>
         {[-1, 1].map((s) => (
           <group key={s} position={[s * 0.24, 0.62, 0.35]}>
             <mesh rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[0.1, 0.1, 0.05, 12]} />
-              <meshStandardMaterial color="#241C16" roughness={1} />
+              <Std color="#241C16" roughness={1} />
             </mesh>
             <mesh position={[0, 0, 0.02]} rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[0.04, 0.04, 0.05, 10]} />
-              <meshStandardMaterial color={room.accent} roughness={0.7} />
+              <Std color={room.accent} roughness={0.7} />
             </mesh>
           </group>
         ))}
@@ -78,34 +79,34 @@ export function Speaker({
           [-1, 1].map((gy) => (
             <mesh key={`${gx}${gy}`} position={[gx * 0.05, 0.62 + gy * 0.06, 0.35]}>
               <sphereGeometry args={[0.016, 6, 5]} />
-              <meshStandardMaterial color="#241C16" roughness={1} />
+              <Std color="#241C16" roughness={1} />
             </mesh>
           )),
         )}
 
         {/* deck plate */}
         <SoftBox position={[0, 0.83, 0]} args={[0.92, 0.11, 0.72]} radius={0.045} receiveShadow>
-          <meshStandardMaterial color="#5A4736" roughness={0.85} />
+          <Std color="#5A4736" roughness={0.85} />
         </SoftBox>
 
         {/* platter + record */}
         <group ref={platter} position={[-0.1, 0.9, 0]}>
           <mesh rotation={[0, 0, 0]}>
             <cylinderGeometry args={[0.26, 0.26, 0.035, 20]} />
-            <meshStandardMaterial color="#1D1815" roughness={0.6} />
+            <Std color="#1D1815" roughness={0.6} />
           </mesh>
           <mesh position={[0, 0.02, 0]}>
             <cylinderGeometry args={[0.09, 0.09, 0.02, 16]} />
-            <meshStandardMaterial color={room.accent} roughness={0.7} />
+            <Std color={room.accent} roughness={0.7} />
           </mesh>
           <mesh position={[0, 0.03, 0]}>
             <cylinderGeometry args={[0.012, 0.012, 0.05, 8]} />
-            <meshStandardMaterial color="#C9B48A" roughness={0.5} />
+            <Std color="#C9B48A" roughness={0.5} />
           </mesh>
           {/* one groove marker so the spin reads at a glance */}
           <mesh position={[0.17, 0.02, 0]}>
             <boxGeometry args={[0.12, 0.004, 0.012]} />
-            <meshStandardMaterial color="#3B322B" roughness={0.9} />
+            <Std color="#3B322B" roughness={0.9} />
           </mesh>
         </group>
 
@@ -113,11 +114,11 @@ export function Speaker({
         <group ref={arm} position={[0.3, 0.92, -0.2]}>
           <mesh>
             <cylinderGeometry args={[0.045, 0.05, 0.06, 10]} />
-            <meshStandardMaterial color="#C9B48A" roughness={0.5} />
+            <Std color="#C9B48A" roughness={0.5} />
           </mesh>
           <mesh position={[-0.16, 0.03, 0.1]} rotation={[0, -0.6, Math.PI / 2]}>
             <capsuleGeometry args={[0.012, 0.32, 2, 8]} />
-            <meshStandardMaterial color="#D6C39B" roughness={0.45} />
+            <Std color="#D6C39B" roughness={0.45} />
           </mesh>
         </group>
 
@@ -125,7 +126,7 @@ export function Speaker({
         {[-1, 1].map((s) => (
           <mesh key={s} position={[0.3, 0.9, s * 0.2 + 0.16]}>
             <cylinderGeometry args={[0.045, 0.05, 0.05, 12]} />
-            <meshStandardMaterial color="#B7A078" roughness={0.6} />
+            <Std color="#B7A078" roughness={0.6} />
           </mesh>
         ))}
 
@@ -155,7 +156,7 @@ export function Speaker({
           <pointLight color={room.accent} intensity={4} distance={3} />
           <mesh>
             <octahedronGeometry args={[0.16, 0]} />
-            <meshStandardMaterial
+            <Std
               color={room.accent}
               emissive={room.accent}
               emissiveIntensity={0.9}
