@@ -864,31 +864,68 @@ function World({
       <DaylightRig />
 
 
+      {/* invisible ground pick-plane: click/tap anywhere walkable to walk there */}
+      <mesh
+        position={[0, 0.02, (HALL_START + HALL_END) / 2]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        onClick={(e) => {
+          e.stopPropagation();
+          goTo(e.point.x, e.point.z);
+        }}
+      >
+        <planeGeometry args={[40, HALL_END - HALL_START + 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <MoveMarker markerRef={marker} />
+
       <Structure />
       <HallwayDressing />
       <LockedDoor playerRef={player} />
       {ROOMS.map((room) => (
         <group key={room.id}>
           <RoomShell room={room} />
-          <DoorFrame room={room} />
+          <group
+            onClick={(e) => {
+              e.stopPropagation();
+              goTo(roomCenterX(room.side), room.z);
+            }}
+          >
+            <DoorFrame room={room} />
+          </group>
         </group>
       ))}
-      {INTERACTIVES.map((item) =>
-        item.kind === "speaker" ? (
-          <Speaker key={item.key} item={item} nearby={nearby.includes(item.key)} />
-        ) : item.kind === "board" ? (
-          <BulletinBoard key={item.key} item={item} nearby={nearby.includes(item.key)} />
-        ) : (
-          <Companion
+      {INTERACTIVES.map((item) => {
+        const toCentre = new THREE.Vector2(
+          roomCenterX(item.room.side) - item.x,
+          item.room.z - item.z,
+        );
+        if (toCentre.lengthSq() < 1e-4) toCentre.set(0, 1);
+        toCentre.setLength(1.0);
+        return (
+          <group
             key={item.key}
-            room={item.room}
-            x={item.x}
-            z={item.z}
-            nearby={nearby.includes(item.key)}
-          />
-        ),
-      )}
+            onClick={(e) => {
+              e.stopPropagation();
+              goTo(item.x + toCentre.x, item.z + toCentre.y);
+            }}
+          >
+            {item.kind === "speaker" ? (
+              <Speaker item={item} nearby={nearby.includes(item.key)} />
+            ) : item.kind === "board" ? (
+              <BulletinBoard item={item} nearby={nearby.includes(item.key)} />
+            ) : (
+              <Companion
+                room={item.room}
+                x={item.x}
+                z={item.z}
+                nearby={nearby.includes(item.key)}
+              />
+            )}
+          </group>
+        );
+      })}
       <Character groupRef={group} />
+
     </>
   );
 }
