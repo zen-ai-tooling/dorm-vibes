@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { SoftBox } from "./soft";
 import type { StickerId } from "@/lib/dorm-data";
+import { Std } from "./materials";
 
 /**
  * Flat low-poly decals. Each entry draws in the local XY plane; the caller
@@ -15,15 +16,15 @@ function StickerShape({ id, color }: { id: StickerId; color: string }) {
         <group>
           <mesh position={[0.05, 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <capsuleGeometry args={[0.012, 0.14, 1, 6]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
           <mesh position={[0.02, -0.06, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.045, 0.045, 0.008, 8]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
           <mesh position={[0.09, 0.09, 0]} rotation={[0, 0, -0.4 + Math.PI / 2]}>
             <capsuleGeometry args={[0.014, 0.06, 1, 6]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
         </group>
       );
@@ -33,7 +34,7 @@ function StickerShape({ id, color }: { id: StickerId; color: string }) {
           {[0, 1].map((i) => (
             <mesh key={i} rotation={[0, 0, (i * Math.PI) / 4 + Math.PI / 8 + Math.PI / 2]}>
               <capsuleGeometry args={[0.026, 0.11, 1, 6]} />
-              <meshStandardMaterial color={color} />
+              <Std color={color} />
             </mesh>
           ))}
         </group>
@@ -43,12 +44,12 @@ function StickerShape({ id, color }: { id: StickerId; color: string }) {
         <group>
           <mesh position={[0, -0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.055, 0.055, 0.008, 8]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
           {[-1, 0, 1].map((s) => (
             <mesh key={s} position={[s * 0.055, 0.07, 0]} rotation={[Math.PI / 2, 0, 0]}>
               <cylinderGeometry args={[0.024, 0.024, 0.008, 6]} />
-              <meshStandardMaterial color={color} />
+              <Std color={color} />
             </mesh>
           ))}
         </group>
@@ -58,15 +59,15 @@ function StickerShape({ id, color }: { id: StickerId; color: string }) {
         <group rotation={[0, 0, Math.PI / 4]}>
           <mesh rotation={[Math.PI / 2, 0, 0]}>
             <capsuleGeometry args={[0.05, 0.05, 1, 8]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
           <mesh position={[-0.05, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.05, 0.05, 0.008, 8]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
           <mesh position={[0.05, -0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.05, 0.05, 0.008, 8]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
         </group>
       );
@@ -75,11 +76,11 @@ function StickerShape({ id, color }: { id: StickerId; color: string }) {
         <group>
           <mesh rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.06, 0.06, 0.008, 10]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
           <mesh rotation={[0, 0, 0.5]}>
             <torusGeometry args={[0.1, 0.012, 4, 14]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
         </group>
       );
@@ -89,11 +90,11 @@ function StickerShape({ id, color }: { id: StickerId; color: string }) {
         <group>
           <mesh rotation={[0, 0, 0.6]}>
             <sphereGeometry args={[0.06, 8, 6]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
           <mesh position={[-0.06, -0.06, 0]} rotation={[0, 0, 0.8 + Math.PI / 2]}>
             <capsuleGeometry args={[0.008, 0.07, 1, 6]} />
-            <meshStandardMaterial color={color} />
+            <Std color={color} />
           </mesh>
         </group>
       );

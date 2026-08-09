@@ -29,6 +29,8 @@ import { RoomDecor } from "./RoomDecor";
 import { Speaker } from "./Speaker";
 import { SoftBox, GroundAO, WallSkirt, jitter } from "./soft";
 import { LightCuller } from "./LightCuller";
+import { StaticMerge } from "./batching";
+import { Basic, Std } from "./materials";
 
 
 type Box = {
@@ -359,18 +361,18 @@ function Hair({ style = "bob", color = "#241428" }: { style?: HairStyle; color?:
       {/* cap shell shared by every style */}
       <mesh position={[0, 1.6, -0.02]} scale={[1.04, 0.9, 1.02]} castShadow>
         <sphereGeometry args={[0.34, 18, 14]} />
-        <meshStandardMaterial color={color} roughness={0.95} />
+        <Std color={color} roughness={0.95} />
       </mesh>
       {style === "bob" && (
         <mesh position={[0, 1.42, -0.16]} scale={[1, 0.8, 1]}>
           <sphereGeometry args={[0.3, 14, 12]} />
-          <meshStandardMaterial color={color} roughness={0.95} />
+          <Std color={color} roughness={0.95} />
         </mesh>
       )}
       {style === "bun" && (
         <mesh position={[0, 1.82, -0.16]} castShadow>
           <sphereGeometry args={[0.14, 12, 10]} />
-          <meshStandardMaterial color={color} roughness={0.95} />
+          <Std color={color} roughness={0.95} />
         </mesh>
       )}
     </group>
@@ -407,7 +409,7 @@ function Character({
       {/* contact shadow — keeps the character grounded at distance */}
       <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={2}>
         <circleGeometry args={[0.44, 20]} />
-        <meshBasicMaterial color="#241009" transparent opacity={0.34} depthWrite={false} />
+        <Basic color="#241009" transparent opacity={0.34} depthWrite={false} />
       </mesh>
 
       {/* legs */}
@@ -415,11 +417,11 @@ function Character({
         <group key={x}>
           <mesh position={[x, 0.42, 0]} castShadow>
             <capsuleGeometry args={[0.11, 0.34, 3, 10]} />
-            <meshStandardMaterial color={LEGS} roughness={0.85} />
+            <Std color={LEGS} roughness={0.85} />
           </mesh>
           <mesh position={[x, 0.1, 0.04]} scale={[1, 0.85, 1.22]} castShadow>
             <sphereGeometry args={[0.125, 14, 10]} />
-            <meshStandardMaterial color={SHOE} roughness={0.8} />
+            <Std color={SHOE} roughness={0.8} />
           </mesh>
         </group>
       ))}
@@ -429,30 +431,30 @@ function Character({
           seam or flat plane anywhere down the body */}
       <mesh position={[0, 0.94, 0]} scale={[1, 1.02, 0.74]} castShadow>
         <capsuleGeometry args={[0.29, 0.3, 4, 16]} />
-        <meshStandardMaterial color={TOP} roughness={0.8} />
+        <Std color={TOP} roughness={0.8} />
       </mesh>
       <mesh position={[0, 1.24, 0]} scale={[1, 0.72, 0.78]} castShadow>
         <sphereGeometry args={[0.235, 16, 12]} />
-        <meshStandardMaterial color={TOP} roughness={0.8} />
+        <Std color={TOP} roughness={0.8} />
       </mesh>
       {/* neck: fills the head/body junction so the two volumes read as one form */}
       <mesh position={[0, 1.35, 0]} scale={[1, 0.8, 1]}>
         <sphereGeometry args={[0.15, 12, 10]} />
-        <meshStandardMaterial color={SKIN} roughness={0.9} />
+        <Std color={SKIN} roughness={0.9} />
       </mesh>
 
       {/* arms */}
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * 0.34, 0.98, 0]} rotation={[0, 0, s * 0.12]} castShadow>
           <capsuleGeometry args={[0.09, 0.32, 3, 10]} />
-          <meshStandardMaterial color={SLEEVE} roughness={0.85} />
+          <Std color={SLEEVE} roughness={0.85} />
         </mesh>
       ))}
 
       {/* head — oversized for a friendly, legible silhouette */}
       <mesh position={[0, 1.53, 0]} scale={[1, 0.96, 0.94]} castShadow>
         <sphereGeometry args={[0.33, 18, 14]} />
-        <meshStandardMaterial color={SKIN} roughness={0.9} />
+        <Std color={SKIN} roughness={0.9} />
       </mesh>
 
       <Hair style={hairStyle} color={hairColor} />
@@ -462,7 +464,7 @@ function Character({
         <group key={x}>
           <mesh position={[x, 1.545, 0.285]} scale={[1, 1.15, 0.6]}>
             <sphereGeometry args={[0.045, 12, 10]} />
-            <meshStandardMaterial color={EYE} roughness={0.5} />
+            <Std color={EYE} roughness={0.5} />
           </mesh>
           {/* brow */}
           <mesh
@@ -471,19 +473,19 @@ function Character({
             scale={[1, 1, 0.55]}
           >
             <capsuleGeometry args={[0.011, 0.062, 1, 6]} />
-            <meshStandardMaterial color={hairColor} roughness={0.9} />
+            <Std color={hairColor} roughness={0.9} />
           </mesh>
           {/* blush */}
           <mesh position={[x * 1.55, 1.475, 0.245]} scale={[1.3, 0.8, 0.3]}>
             <sphereGeometry args={[0.05, 10, 8]} />
-            <meshStandardMaterial color="#B85B62" roughness={1} transparent opacity={0.55} />
+            <Std color="#B85B62" roughness={1} transparent opacity={0.55} />
           </mesh>
         </group>
       ))}
       {/* smile */}
       <mesh position={[0, 1.455, 0.292]} rotation={[0, 0, Math.PI]}>
         <torusGeometry args={[0.05, 0.012, 6, 12, Math.PI]} />
-        <meshStandardMaterial color="#5B2733" roughness={0.8} />
+        <Std color="#5B2733" roughness={0.8} />
       </mesh>
     </group>
   );
@@ -500,20 +502,20 @@ function Structure() {
         radius={0.04}
         receiveShadow
       >
-        <meshStandardMaterial color={COLORS.floor} roughness={0.95} />
+        <Std color={COLORS.floor} roughness={0.95} />
       </SoftBox>
       <mesh
         position={[0, HALL_H, (HALL_START + HALL_END) / 2]}
         rotation={[Math.PI / 2, 0, 0]}
       >
         <planeGeometry args={[HALL_W + WALL_T * 2, HALL_END - HALL_START]} />
-        <meshStandardMaterial color={COLORS.ceiling} />
+        <Std color={COLORS.ceiling} />
       </mesh>
       {/* floor plank seams */}
       {Array.from({ length: Math.floor((HALL_END - HALL_START) / 1.5) }).map((_, i) => (
         <mesh key={i} position={[0, 0.005, HALL_START + i * 1.5]} rotation={[0, 0, Math.PI / 2]}>
           <capsuleGeometry args={[0.016, HALL_W - 0.04, 1, 6]} />
-          <meshStandardMaterial color={COLORS.floorDark} roughness={1} />
+          <Std color={COLORS.floorDark} roughness={1} />
         </mesh>
       ))}
       {/* walls — interior faces use the plaster tone, the outward-facing skin
@@ -530,7 +532,7 @@ function Structure() {
                   individually so the outward skin can carry a finished
                   exterior tone instead of raw interior plaster. */}
               {(["+x", "-x", "+y", "-y", "+z", "-z"] as const).map((face, m) => (
-                <meshStandardMaterial
+                <Std
                   key={face}
                   attach={`material-${m}`}
                   color={face === w.out ? COLORS.wallOuter : COLORS.wall}
@@ -547,7 +549,7 @@ function Structure() {
                 radius={0.045}
                 receiveShadow
               >
-                <meshStandardMaterial color={COLORS.wallOuter} roughness={0.95} />
+                <Std color={COLORS.wallOuter} roughness={0.95} />
               </SoftBox>
             )}
           </group>
@@ -566,7 +568,7 @@ function Structure() {
             smoothness={1}
             castShadow
           >
-            <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
+            <Std color={COLORS.trim} roughness={0.95} />
           </SoftBox>
           <WallSkirt
             position={[s * (HALF - 0.1), 0.3, (HALL_START + HALL_END) / 2]}
@@ -604,14 +606,14 @@ function RoomShell({ room }: { room: Room }) {
         radius={0.04}
         receiveShadow
       >
-        <meshStandardMaterial color={COLORS.floor} roughness={0.95} />
+        <Std color={COLORS.floor} roughness={0.95} />
       </SoftBox>
       <mesh
         position={[cx + sign * (WALL_T / 2 - 0.02), HALL_H, room.z]}
         rotation={[Math.PI / 2, 0, 0]}
       >
         <planeGeometry args={[ROOM_SIZE + WALL_T + 0.04, ROOM_SIZE + WALL_T * 2]} />
-        <meshStandardMaterial color={COLORS.ceiling} />
+        <Std color={COLORS.ceiling} />
       </mesh>
 
       {/* interior accent trim rail — embedded 0.01 into the wall so no face is
@@ -624,7 +626,7 @@ function RoomShell({ room }: { room: Room }) {
             radius={0.038}
             smoothness={1}
           >
-            <meshStandardMaterial color={room.accent} roughness={0.9} />
+            <Std color={room.accent} roughness={0.9} />
           </SoftBox>
           {/* crevice shading where this wall meets the room floor */}
           <WallSkirt
@@ -644,7 +646,7 @@ function RoomShell({ room }: { room: Room }) {
         </group>
       ))}
       <SoftBox position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.02), 1.05, room.z]} args={[0.08, 0.11, ROOM_SIZE - 0.02]} radius={0.038} smoothness={1}>
-        <meshStandardMaterial color={room.accent} roughness={0.9} />
+        <Std color={room.accent} roughness={0.9} />
       </SoftBox>
       <WallSkirt
         position={[sign * (HALF + WALL_T + ROOM_SIZE - 0.06), 0.3, room.z]}
@@ -666,33 +668,33 @@ function RoomShell({ room }: { room: Room }) {
       <group position={[cx + sign * 1.5, 0, room.z + 1.4]} rotation={[0, jitter(`bed-${room.id}`, 0.05), 0]}>
         <GroundAO size={2.1} depth={2.9} opacity={0.5} />
         <SoftBox position={[0, 0.28, 0]} castShadow args={[1.1, 0.45, 2]} radius={0.2} smoothness={1}>
-          <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
+          <Std color={COLORS.trim} roughness={0.95} />
         </SoftBox>
         <SoftBox position={[0, 0.58, 0]} castShadow args={[1.05, 0.2, 1.9]} radius={0.095} smoothness={1}>
-          <meshStandardMaterial color={room.accent} roughness={0.9} />
+          <Std color={room.accent} roughness={0.9} />
         </SoftBox>
         {/* pillow */}
         <mesh position={[0, 0.68, -0.72]} scale={[1.5, 0.55, 0.9]} castShadow>
           <sphereGeometry args={[0.3, 14, 10]} />
-          <meshStandardMaterial color="#F3E6D2" roughness={1} />
+          <Std color="#F3E6D2" roughness={1} />
         </mesh>
       </group>
       {/* rug */}
       <mesh position={[cx, 0.02, room.z - 0.4]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
         <planeGeometry args={[2.2, 1.8]} />
-        <meshStandardMaterial color={room.accent} opacity={0.5} transparent depthWrite={false} />
+        <Std color={room.accent} opacity={0.5} transparent depthWrite={false} />
       </mesh>
 
       {/* desk */}
       <group position={[cx - sign * 1.8, 0, room.z + 1.9]} rotation={[0, jitter(`desk-${room.id}`, 0.06), 0]}>
         <GroundAO size={1.7} depth={1.1} opacity={0.44} />
         <SoftBox position={[0, 0.75, 0]} castShadow args={[1.4, 0.12, 0.7]} radius={0.055} smoothness={1}>
-          <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
+          <Std color={COLORS.trim} roughness={0.95} />
         </SoftBox>
         {[-1, 1].map((sx) => (
           <mesh key={sx} position={[sx * 0.6, 0.37, 0]} castShadow>
             <capsuleGeometry args={[0.045, 0.6, 2, 8]} />
-            <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
+            <Std color={COLORS.trim} roughness={0.95} />
           </mesh>
         ))}
       </group>
@@ -718,16 +720,16 @@ function DoorFrame({ room }: { room: Room }) {
         args={[WALL_T, HALL_H - DOOR_H, DOOR_W + 0.08]}
         radius={0.05}
       >
-        <meshStandardMaterial color={COLORS.wall} roughness={0.9} />
+        <Std color={COLORS.wall} roughness={0.9} />
       </SoftBox>
       {/* accent frame, sunk into the wall run rather than butted against it */}
       {[-1, 1].map((dz) => (
         <SoftBox key={dz} position={[x, DOOR_H / 2, room.z + dz * (DOOR_W / 2 + 0.02)]} args={[WALL_T + 0.05, DOOR_H, 0.14]} radius={0.062} smoothness={1}>
-<meshStandardMaterial color={room.accent} />
+<Std color={room.accent} />
 </SoftBox>
       ))}
       <SoftBox position={[x, DOOR_H + 0.05, room.z]} args={[WALL_T + 0.05, 0.16, DOOR_W + 0.24]} radius={0.072} smoothness={1}>
-<meshStandardMaterial color={room.accent} />
+<Std color={room.accent} />
 </SoftBox>
 
       {/* open door panel swung into the room */}
@@ -736,11 +738,11 @@ function DoorFrame({ room }: { room: Room }) {
         rotation={[0, sign * 0.9, 0]}
         castShadow
        args={[0.11, DOOR_H, DOOR_W]} radius={0.052} smoothness={1}>
-<meshStandardMaterial color={COLORS.trim} />
+<Std color={COLORS.trim} />
 </SoftBox>
       {/* warm light above the door */}
       <SoftBox position={[sign * (HALF - 0.12), 2.55, room.z]} args={[0.17, 0.23, 0.5]} radius={0.105} smoothness={1}>
-<meshStandardMaterial color="#FFE6B0" emissive="#FFC773" emissiveIntensity={1.2} />
+<Std color="#FFE6B0" emissive="#FFC773" emissiveIntensity={1.2} />
 </SoftBox>
       <DoorLight position={[sign * (HALF - 0.4), 2.4, room.z]} />
 
@@ -792,10 +794,10 @@ function BulletinBoard({ item, nearby }: { item: Interactive; nearby: boolean })
   return (
     <group position={[item.x, 0, item.z]} rotation={[0, sign === -1 ? Math.PI / 2 : -Math.PI / 2, 0]}>
       <SoftBox position={[0, 1.55, 0]} castShadow args={[1.8, 1.2, 0.12]} radius={0.055} smoothness={1}>
-        <meshStandardMaterial color={item.room.accent} roughness={0.9} />
+        <Std color={item.room.accent} roughness={0.9} />
       </SoftBox>
       <SoftBox position={[0, 1.55, 0.07]} args={[1.62, 1.02, 0.04]} radius={0.018} smoothness={1}>
-        <meshStandardMaterial color="#C9A57A" roughness={1} />
+        <Std color="#C9A57A" roughness={1} />
       </SoftBox>
       {[
         [-0.5, 1.75],
@@ -810,7 +812,7 @@ function BulletinBoard({ item, nearby }: { item: Interactive; nearby: boolean })
           radius={0.009}
           smoothness={1}
         >
-          <meshStandardMaterial color={i === 2 ? "#F2E8D5" : "#FBF6EA"} roughness={1} />
+          <Std color={i === 2 ? "#F2E8D5" : "#FBF6EA"} roughness={1} />
         </SoftBox>
       ))}
       {nearby && (
@@ -818,7 +820,7 @@ function BulletinBoard({ item, nearby }: { item: Interactive; nearby: boolean })
           <pointLight color={item.room.accent} intensity={4} distance={3} />
           <mesh>
             <octahedronGeometry args={[0.16, 0]} />
-            <meshStandardMaterial
+            <Std
               color={item.room.accent}
               emissive={item.room.accent}
               emissiveIntensity={0.9}
@@ -1107,16 +1109,20 @@ function World({
         }}
       >
         <planeGeometry args={[40, HALL_END - HALL_START + 8]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+        <Basic transparent opacity={0} depthWrite={false} />
       </mesh>
       <MoveMarker markerRef={marker} />
 
-      <Structure />
-      <HallwayDressing />
+      <StaticMerge>
+        <Structure />
+        {ROOMS.map((room) => (
+          <RoomShell key={room.id} room={room} />
+        ))}
+        <HallwayDressing />
+      </StaticMerge>
       <LockedDoor playerRef={player} />
       {ROOMS.map((room) => (
         <group key={room.id}>
-          <RoomShell room={room} />
           <group
             onClick={(e) => {
               e.stopPropagation();
