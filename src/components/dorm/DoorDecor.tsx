@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { SoftBox } from "./soft";
 import type { StickerId } from "@/lib/dorm-data";
 
 /**
@@ -12,16 +13,16 @@ function StickerShape({ id, color }: { id: StickerId; color: string }) {
     case "note":
       return (
         <group>
-          <mesh position={[0.05, 0.02, 0]}>
-            <boxGeometry args={[0.02, 0.16, 0.008]} />
+          <mesh position={[0.05, 0.02, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <capsuleGeometry args={[0.012, 0.14, 1, 6]} />
             <meshStandardMaterial color={color} />
           </mesh>
           <mesh position={[0.02, -0.06, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry args={[0.045, 0.045, 0.008, 8]} />
             <meshStandardMaterial color={color} />
           </mesh>
-          <mesh position={[0.09, 0.09, 0]} rotation={[0, 0, -0.4]}>
-            <boxGeometry args={[0.09, 0.03, 0.008]} />
+          <mesh position={[0.09, 0.09, 0]} rotation={[0, 0, -0.4 + Math.PI / 2]}>
+            <capsuleGeometry args={[0.014, 0.06, 1, 6]} />
             <meshStandardMaterial color={color} />
           </mesh>
         </group>
@@ -30,8 +31,8 @@ function StickerShape({ id, color }: { id: StickerId; color: string }) {
       return (
         <group>
           {[0, 1].map((i) => (
-            <mesh key={i} rotation={[0, 0, (i * Math.PI) / 4 + Math.PI / 8]}>
-              <boxGeometry args={[0.16, 0.055, 0.008]} />
+            <mesh key={i} rotation={[0, 0, (i * Math.PI) / 4 + Math.PI / 8 + Math.PI / 2]}>
+              <capsuleGeometry args={[0.026, 0.11, 1, 6]} />
               <meshStandardMaterial color={color} />
             </mesh>
           ))}
@@ -55,8 +56,8 @@ function StickerShape({ id, color }: { id: StickerId; color: string }) {
     case "heart":
       return (
         <group rotation={[0, 0, Math.PI / 4]}>
-          <mesh>
-            <boxGeometry args={[0.1, 0.1, 0.008]} />
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <capsuleGeometry args={[0.05, 0.05, 1, 8]} />
             <meshStandardMaterial color={color} />
           </mesh>
           <mesh position={[-0.05, 0.05, 0]} rotation={[Math.PI / 2, 0, 0]}>
@@ -90,8 +91,8 @@ function StickerShape({ id, color }: { id: StickerId; color: string }) {
             <sphereGeometry args={[0.06, 8, 6]} />
             <meshStandardMaterial color={color} />
           </mesh>
-          <mesh position={[-0.06, -0.06, 0]} rotation={[0, 0, 0.8]}>
-            <boxGeometry args={[0.09, 0.015, 0.008]} />
+          <mesh position={[-0.06, -0.06, 0]} rotation={[0, 0, 0.8 + Math.PI / 2]}>
+            <capsuleGeometry args={[0.008, 0.07, 1, 6]} />
             <meshStandardMaterial color={color} />
           </mesh>
         </group>

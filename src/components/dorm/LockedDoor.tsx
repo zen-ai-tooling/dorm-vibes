@@ -1,6 +1,7 @@
 import { useRef, type MutableRefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { SoftBox } from "./soft";
 import { HALL_W, HALL_H, WALL_T, DOOR_W, DOOR_H } from "@/lib/dorm-data";
 
 const HALF = HALL_W / 2;
@@ -49,34 +50,31 @@ export function LockedDoor({
   return (
     <group>
       {/* recessed doorway panel, flush against the (unbroken) wall run */}
-      <mesh position={[SIGN * (HALF - 0.03), DOOR_H / 2, z]}>
-        <boxGeometry args={[0.06, DOOR_H, DOOR_W]} />
-        <meshStandardMaterial color={DEAD_DARK} />
-      </mesh>
+      <SoftBox position={[SIGN * (HALF - 0.03), DOOR_H / 2, z]} args={[0.06, DOOR_H, DOOR_W]} radius={0.028}>
+        <meshStandardMaterial color={DEAD_DARK} roughness={0.95} />
+      </SoftBox>
       {/* dull frame — sunk into the wall so nothing is coplanar */}
       {[-1, 1].map((dz) => (
-        <mesh
+        <SoftBox
           key={dz}
           position={[x, DOOR_H / 2, z + dz * (DOOR_W / 2 + 0.02)]}
+          args={[WALL_T + 0.02, DOOR_H, 0.12]}
+          radius={0.05}
         >
-          <boxGeometry args={[WALL_T + 0.02, DOOR_H, 0.12]} />
-          <meshStandardMaterial color={DEAD} />
-        </mesh>
+          <meshStandardMaterial color={DEAD} roughness={0.95} />
+        </SoftBox>
       ))}
-      <mesh position={[x, DOOR_H + 0.05, z]}>
-        <boxGeometry args={[WALL_T + 0.02, 0.14, DOOR_W + 0.24]} />
-        <meshStandardMaterial color={DEAD} />
-      </mesh>
+      <SoftBox position={[x, DOOR_H + 0.05, z]} args={[WALL_T + 0.02, 0.14, DOOR_W + 0.24]} radius={0.06}>
+        <meshStandardMaterial color={DEAD} roughness={0.95} />
+      </SoftBox>
       {/* dark, unlit fixture above the door (no point light — reads unoccupied) */}
-      <mesh position={[SIGN * (HALF - 0.12), 2.55, z]}>
-        <boxGeometry args={[0.16, 0.22, 0.5]} />
-        <meshStandardMaterial color={DEAD_DARK} />
-      </mesh>
+      <SoftBox position={[SIGN * (HALF - 0.12), 2.55, z]} args={[0.16, 0.22, 0.5]} radius={0.07}>
+        <meshStandardMaterial color={DEAD_DARK} roughness={0.95} />
+      </SoftBox>
       {/* padlock hint on the panel */}
-      <mesh position={[SIGN * (HALF - 0.08), 1.15, z]}>
-        <boxGeometry args={[0.05, 0.22, 0.18]} />
+      <SoftBox position={[SIGN * (HALF - 0.08), 1.15, z]} args={[0.05, 0.22, 0.18]} radius={0.024}>
         <meshStandardMaterial color="#8C877E" metalness={0.3} roughness={0.6} />
-      </mesh>
+      </SoftBox>
 
       {/* nearby-only soft glow marker (space reserved for a future label) */}
       <mesh ref={glow} position={[SIGN * (HALF - 0.25), 2.45, z]} rotation={[0, -Math.PI / 2, 0]} visible={false}>
