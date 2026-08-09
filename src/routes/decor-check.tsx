@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { ROOMS, roomCenterX } from "@/lib/dorm-data";
 import { RoomDecor } from "@/components/dorm/RoomDecor";
@@ -9,6 +10,9 @@ export const Route = createFileRoute("/decor-check")({ component: C });
 function C() {
   const room = ROOMS[0]!;
   const cx = roomCenterX(room.side);
+  const [m, setM] = useState(false);
+  useEffect(() => setM(true), []);
+  if (!m) return null;
   return (
     <div style={{ height: "100vh" }}>
       <Canvas camera={{ position: [cx + 3.5, 2.6, room.z - 5.5], fov: 55 }}>
