@@ -261,7 +261,7 @@ function findPath(from: THREE.Vector2, to: THREE.Vector2): THREE.Vector2[] {
     }
   }
 
-  if (prev[goal] < 0) return [];
+  if (prev[goal]! < 0) return [];
   const out: THREE.Vector2[] = [];
   for (let i = goal; i > 0; i = prev[i]!) out.unshift(nodes[i]!.clone());
   return out;
