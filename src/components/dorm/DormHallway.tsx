@@ -21,6 +21,7 @@ import { HallwayDressing } from "./HallwayProps";
 import { DormAudio } from "@/lib/dorm-audio";
 import { DaylightRig, DoorLight } from "./Daylight";
 import { HallwayWindows, wallPanels } from "./Windows";
+import { LockedDoor } from "./LockedDoor";
 
 
 type Box = { cx: number; cz: number; sx: number; sz: number };
@@ -665,6 +666,7 @@ function World({
 
       <Structure />
       <HallwayDressing />
+      <LockedDoor playerRef={player} />
       {ROOMS.map((room) => (
         <group key={room.id}>
           <RoomShell room={room} />

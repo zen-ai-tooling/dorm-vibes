@@ -79,7 +79,7 @@ export function LockedDoor({
       </mesh>
 
       {/* nearby-only soft glow marker (space reserved for a future label) */}
-      <mesh ref={glow} position={[SIGN * (HALF - 0.25), 2.45, z]} visible={false}>
+      <mesh ref={glow} position={[SIGN * (HALF - 0.25), 2.45, z]} rotation={[0, -Math.PI / 2, 0]} visible={false}>
         <planeGeometry args={[0.7, 0.7]} />
         <meshBasicMaterial
           ref={glowMat}
