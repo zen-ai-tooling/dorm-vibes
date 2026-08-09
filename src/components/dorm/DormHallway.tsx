@@ -753,7 +753,26 @@ function World({
       player.current.y += move.y;
       resolveCollisions(player.current);
       facing.current.lerp(dir, 1 - Math.pow(0.0005, delta)).normalize();
+    } else if (path.current.length) {
+      // ---- 2b. click/tap auto-walk along the resolved waypoint route
+      const wp = path.current[0]!;
+      const to = new THREE.Vector2(wp.x - player.current.x, wp.y - player.current.y);
+      const remaining = to.length();
+      if (remaining < 0.12) {
+        path.current.shift();
+      } else {
+        const dir = to.clone().normalize();
+        const step = Math.min(WALK_SPEED * delta, remaining);
+        player.current.x += dir.x * step;
+        resolveCollisions(player.current);
+        player.current.y += dir.y * step;
+        resolveCollisions(player.current);
+        facing.current.lerp(dir, 1 - Math.pow(0.0005, delta)).normalize();
+        moving = true;
+      }
     }
+
+
 
 
     if (group.current) {
