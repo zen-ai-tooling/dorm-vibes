@@ -24,6 +24,7 @@ import { HallwayWindows, wallPanels } from "./Windows";
 import { LockedDoor } from "./LockedDoor";
 import { Companion } from "./Companion";
 import { DoorStickers, NowPlayingPulse } from "./DoorDecor";
+import { RoomMood } from "./RoomMood";
 
 
 type Box = { cx: number; cz: number; sx: number; sz: number };
@@ -343,6 +344,9 @@ function RoomShell({ room }: { room: Room }) {
         <boxGeometry args={[1.4, 0.1, 0.7]} />
         <meshStandardMaterial color={COLORS.trim} />
       </mesh>
+
+      {/* data-derived mood atmosphere (tint fill + batched particles) */}
+      <RoomMood room={room} />
     </group>
   );
 }
