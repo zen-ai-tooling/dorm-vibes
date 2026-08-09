@@ -1190,9 +1190,6 @@ export default function DormHallway() {
         dpr={[1, 1.5]}
         gl={{ antialias: true }}
         camera={{ fov: 52, near: 0.5, far: 140, position: [0, 10, -8.5] }}
-        onCreated={(s) => {
-          (window as unknown as Record<string, unknown>)['__dorm'] = s;
-        }}
       >
         <World onNearby={() => {}} onActive={setActiveKey} />
       </Canvas>
