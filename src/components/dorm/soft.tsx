@@ -160,8 +160,7 @@ export function GroundAO({
       renderOrder={1}
     >
       <planeGeometry args={[size, depth ?? size]} />
-      <primitive
-        attach="material"
+      <MatPrimitive
         object={getBasic({
           map,
           color,
@@ -198,8 +197,7 @@ export function WallSkirt({
   return (
     <mesh position={position} rotation={rotation} renderOrder={1}>
       <planeGeometry args={[width, height]} />
-      <primitive
-        attach="material"
+      <MatPrimitive
         object={getBasic({
           map,
           color,
