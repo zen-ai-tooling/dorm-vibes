@@ -56,7 +56,8 @@ function apply(mat: THREE.Material, p: Props) {
   return mat;
 }
 
-export function getStd(p: Props): THREE.MeshStandardMaterial {
+export function getStd(raw: Props): THREE.MeshStandardMaterial {
+  const p = normalise(raw);
   const k = keyOf(p);
   let m = stdCache.get(k);
   if (!m) {
@@ -66,7 +67,8 @@ export function getStd(p: Props): THREE.MeshStandardMaterial {
   return m;
 }
 
-export function getBasic(p: Props): THREE.MeshBasicMaterial {
+export function getBasic(raw: Props): THREE.MeshBasicMaterial {
+  const p = normalise(raw);
   const k = keyOf(p);
   let m = basicCache.get(k);
   if (!m) {
