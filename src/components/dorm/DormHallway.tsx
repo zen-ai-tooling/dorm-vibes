@@ -806,11 +806,17 @@ function World({
 
     // ---- 1. camera rig orientation, updated BEFORE movement is resolved so
     // input is always relative to the yaw the player will actually see.
-    const targetYaw = Math.atan2(facing.current.x, facing.current.y);
+    // Inside a room the rig is anchored to the room itself (looking from the
+    // doorway straight into the interior) rather than trailing the character.
+    const curRoom = roomContaining(player.current.x, player.current.y);
+    const wantRoom = curRoom ? 1 : 0;
+    const roomYaw = curRoom ? Math.atan2(sideSign(curRoom.side), 0) : 0;
+    const targetYaw = curRoom ? roomYaw : Math.atan2(facing.current.x, facing.current.y);
     let dYaw = targetYaw - camYaw.current;
     while (dYaw > Math.PI) dYaw -= Math.PI * 2;
     while (dYaw < -Math.PI) dYaw += Math.PI * 2;
-    camYaw.current += dYaw * (1 - Math.pow(0.25, delta));
+    // snap toward the room yaw quickly; drift lazily behind the character in the hallway
+    camYaw.current += dYaw * (1 - Math.pow(curRoom ? 0.0005 : 0.25, delta));
 
     // camera-relative basis on the XZ plane (y deliberately zeroed: the rig
     // looks slightly downward, and that pitch must not bleed into movement)
