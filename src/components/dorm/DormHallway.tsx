@@ -655,6 +655,20 @@ function World({
   const camYaw = useRef(0);
   const camDist = useRef(CAM_DIST);
 
+  // --- click/tap-to-move state (additive: WASD input cancels it instantly)
+  const path = useRef<THREE.Vector2[]>([]);
+  const marker = useRef<{ x: number; z: number; born: number } | null>(null);
+  const goTo = (x: number, z: number) => {
+    const dest = new THREE.Vector2(x, z);
+    resolveCollisions(dest, PLAYER_R * 1.02);
+    const route = findPath(player.current, dest);
+    if (!route.length) return;
+    path.current = route;
+    marker.current = { x: dest.x, z: dest.y, born: performance.now() };
+  };
+
+
+
   // --- ambience audio: footsteps, idle cue, muffled music bleeding from doors
   const audio = useRef<DormAudio | null>(null);
   if (!audio.current) {
