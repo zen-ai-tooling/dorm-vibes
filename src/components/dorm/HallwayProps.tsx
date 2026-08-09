@@ -26,7 +26,7 @@ export function CommunityBoard() {
   return (
     <group position={[x, 0, z]} rotation={[0, sign === -1 ? Math.PI / 2 : -Math.PI / 2, 0]}>
       {/* frame */}
-      <SoftBox position={[0, 1.7, 0]} args={[2.2, 1.4, 0.1]} radius={0.045} castShadow>
+      <SoftBox position={[0, 1.7, 0]} args={[2.2, 1.4, 0.1]} radius={0.045}>
         <meshStandardMaterial color={COLORS.trim} roughness={0.95} />
       </SoftBox>
       {/* cork face */}
@@ -46,7 +46,7 @@ export function CommunityBoard() {
           rotation={[0, 0, p[2]! + jitter(`slip${i}`, 0.06)]}
           args={[0.46, 0.34, 0.02]}
           radius={0.008}
-          castShadow
+         
         >
           <meshStandardMaterial color={i % 2 ? "#FBF6EA" : "#F2E8D5"} roughness={1} />
         </SoftBox>
@@ -107,7 +107,7 @@ export function VendingMachine() {
             rotation={[jitter(`snack${r}${c}`, 0.08), 0, jitter(`snackz${r}${c}`, 0.1)]}
             args={[0.1, 0.2, 0.16]}
             radius={0.035}
-            castShadow
+           
           >
             <meshStandardMaterial color={["#E07A5F", "#F2CC8F", "#9B6BC7"][(r + c + 3) % 3]!} roughness={0.9} />
           </SoftBox>
@@ -134,7 +134,7 @@ export function LostAndFound() {
   return (
     <group position={[x, 0, z]}>
       <GroundAO size={1.6} depth={1.8} opacity={0.45} />
-      <SoftBox position={[0, 0.3, 0]} args={[0.7, 0.6, 0.9]} radius={0.14} castShadow receiveShadow>
+      <SoftBox position={[0, 0.3, 0]} args={[0.7, 0.6, 0.9]} radius={0.14} receiveShadow>
         <meshStandardMaterial color="#8C6A4A" roughness={0.95} />
       </SoftBox>
       {/* rim */}
@@ -143,13 +143,13 @@ export function LostAndFound() {
         <meshStandardMaterial color={COLORS.trim} roughness={0.9} />
       </mesh>
       {/* spilling-over odds and ends */}
-      <SoftBox position={[-sign * 0.12, 0.74, 0.18]} rotation={[0.06, 0.4, 0.2]} args={[0.3, 0.16, 0.34]} radius={0.06} castShadow>
+      <SoftBox position={[-sign * 0.12, 0.74, 0.18]} rotation={[0.06, 0.4, 0.2]} args={[0.3, 0.16, 0.34]} radius={0.06}>
         <meshStandardMaterial color="#E07A5F" roughness={0.95} />
       </SoftBox>
-      <SoftBox position={[sign * 0.1, 0.72, -0.2]} rotation={[0.2, -0.3, 0.05]} args={[0.26, 0.12, 0.26]} radius={0.05} castShadow>
+      <SoftBox position={[sign * 0.1, 0.72, -0.2]} rotation={[0.2, -0.3, 0.05]} args={[0.26, 0.12, 0.26]} radius={0.05}>
         <meshStandardMaterial color="#4A9B8E" roughness={0.95} />
       </SoftBox>
-      <SoftBox position={[0, 0.78, -0.02]} rotation={[0.04, 0.8, 0.1]} args={[0.22, 0.2, 0.2]} radius={0.07} castShadow>
+      <SoftBox position={[0, 0.78, -0.02]} rotation={[0.04, 0.8, 0.1]} args={[0.22, 0.2, 0.2]} radius={0.07}>
         <meshStandardMaterial color="#F2CC8F" roughness={0.95} />
       </SoftBox>
       {/* handwritten tag */}
@@ -313,7 +313,7 @@ export function HallwayDressing() {
         rotation={[0, 0.14, 0]}
         args={[0.4, 0.44, 0.6]}
         radius={0.09}
-        castShadow
+       
       >
         <meshStandardMaterial color="#9C8264" roughness={0.95} />
       </SoftBox>

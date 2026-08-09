@@ -1,19 +1,55 @@
 import { useMemo, type ReactNode } from "react";
-import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
+import { toCreasedNormals } from "three-stdlib";
 
 /**
  * Shape + shadow treatment shared across the scene.
  *
  * The art direction ("A Short Hike"-style chunky rounded low-poly) asks for
  * two things that are cheap to do globally:
- *   1. no hard cube corners anywhere → <SoftBox>, a RoundedBox whose corner
+ *   1. no hard cube corners anywhere → <SoftBox>, a rounded box whose corner
  *      radius is derived from the smallest dimension so thin panels and chunky
  *      furniture both round believably without hand-tuning every call site;
  *   2. gentle contact darkening where forms meet → <GroundAO> / <WallSkirt>,
  *      unlit gradient decals that fake ambient occlusion without textures,
  *      extra lights, or a post-processing pass.
+ *
+ * Rounded-box geometry is cached per (size, radius, smoothness) signature and
+ * shared between every call site with matching dimensions — the scene repeats
+ * the same trim/frame/panel sizes many times over, and drei's <RoundedBox>
+ * built (and uploaded) a fresh geometry for every single one.
  */
+
+const EPS = 0.00001;
+const geoCache = new Map<string, THREE.ExtrudeGeometry>();
+
+/** Same construction drei's RoundedBox uses internally, built once per size. */
+function roundedBoxGeometry(
+  width: number,
+  height: number,
+  depth: number,
+  radius: number,
+  smoothness: number,
+) {
+  const shape = new THREE.Shape();
+  const r = radius - EPS;
+  shape.absarc(EPS, EPS, EPS, -Math.PI / 2, -Math.PI, true);
+  shape.absarc(EPS, height - r * 2, EPS, Math.PI, Math.PI / 2, true);
+  shape.absarc(width - r * 2, height - r * 2, EPS, Math.PI / 2, 0, true);
+  shape.absarc(width - r * 2, EPS, EPS, 0, -Math.PI / 2, true);
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: depth - radius * 2,
+    bevelEnabled: true,
+    bevelSegments: smoothness * 2,
+    steps: 1,
+    bevelSize: radius - EPS,
+    bevelThickness: radius,
+    curveSegments: smoothness,
+  });
+  geo.center();
+  toCreasedNormals(geo, 0.4);
+  return geo;
+}
 
 /** Rounded replacement for <mesh><boxGeometry/></mesh>. Radius is automatic. */
 export function SoftBox({
@@ -27,16 +63,30 @@ export function SoftBox({
   radius?: number;
   smoothness?: number;
   children?: ReactNode;
-} & Omit<React.ComponentProps<typeof RoundedBox>, "args" | "radius" | "smoothness">) {
-  // clamp to just under half the thinnest axis, otherwise RoundedBox degenerates
+} & Omit<React.ComponentProps<"mesh">, "args" | "children">) {
+  // clamp to just under half the thinnest axis, otherwise the bevel degenerates
   const min = Math.min(args[0], args[1], args[2]);
-  const r = Math.min(radius ?? min * 0.32, min * 0.49);
+  const r = Math.max(Math.min(radius ?? min * 0.32, min * 0.49), 0.004);
+  const key = `${args[0]}|${args[1]}|${args[2]}|${r}|${smoothness}`;
+
+  const geometry = useMemo(() => {
+    let hit = geoCache.get(key);
+    if (!hit) {
+      hit = roundedBoxGeometry(args[0], args[1], args[2], r, smoothness);
+      geoCache.set(key, hit);
+    }
+    return hit;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
   return (
-    <RoundedBox args={args} radius={Math.max(r, 0.004)} smoothness={smoothness} {...rest}>
+    <mesh geometry={geometry} {...rest}>
       {children}
-    </RoundedBox>
+    </mesh>
   );
 }
+
+
 
 /** Radial falloff, opaque at the centre → transparent at the rim. */
 function radialTexture() {

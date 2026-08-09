@@ -132,7 +132,7 @@ function HallWindow({ spec }: { spec: WindowSpec }) {
     <group>
       {/* sill + head + jambs, sunk slightly into the wall run so no face is
           coplanar with the wall surface */}
-      <mesh position={[x, WIN_SILL + 0.03, spec.z]} castShadow>
+      <mesh position={[x, WIN_SILL + 0.03, spec.z]}>
         <boxGeometry args={[0.18, 0.12, WIN_W + 0.2]} />
         <meshStandardMaterial color={COLORS.trim} />
       </mesh>
@@ -224,11 +224,11 @@ function HallWindow({ spec }: { spec: WindowSpec }) {
 
       {/* cozy detail: a tiny potted plant on the sill */}
       <group position={[x - sign * 0.02, WIN_SILL + 0.09, spec.z + WIN_W / 2 - 0.3]}>
-        <mesh castShadow>
+        <mesh>
           <cylinderGeometry args={[0.06, 0.05, 0.1, 8]} />
           <meshStandardMaterial color="#C0714F" />
         </mesh>
-        <mesh position={[0, 0.11, 0]} castShadow>
+        <mesh position={[0, 0.11, 0]}>
           <icosahedronGeometry args={[0.09, 0]} />
           <meshStandardMaterial color="#5E8C5A" flatShading />
         </mesh>
