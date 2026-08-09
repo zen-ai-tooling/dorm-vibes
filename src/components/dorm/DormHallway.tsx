@@ -20,6 +20,7 @@ import {
 import { HallwayDressing } from "./HallwayProps";
 import { DormAudio } from "@/lib/dorm-audio";
 import { DaylightRig, DoorLight } from "./Daylight";
+import { HallwayWindows, wallPanels } from "./Windows";
 
 
 type Box = { cx: number; cz: number; sx: number; sz: number };
@@ -257,16 +258,19 @@ function Structure() {
         </mesh>
       ))}
       {/* walls */}
-      {WALLS.map((w, i) => (
-        <mesh key={i} position={[w.cx, HALL_H / 2, w.cz]} castShadow receiveShadow>
-          <boxGeometry args={[w.sx, HALL_H, w.sz]} />
+      {WALLS.flatMap((w, i) =>
+        wallPanels(w).map((p, j) => (
+        <mesh key={`${i}-${j}`} position={[p.cx, p.cy, p.cz]} castShadow receiveShadow>
+          <boxGeometry args={[p.sx, p.sy, p.sz]} />
           {/* DoubleSide, not BackSide: with BackSide the near wall face was
               culled, so it wrote no depth and room furniture bled through the
               wall and fought with the far face */}
           <meshStandardMaterial color={COLORS.wall} side={THREE.DoubleSide} />
 
         </mesh>
-      ))}
+        )),
+      )}
+      <HallwayWindows />
       {/* baseboard trim along hallway */}
       {[-1, 1].map((s) => (
         <mesh key={s} position={[s * (HALF - 0.02), 0.14, (HALL_START + HALL_END) / 2]}>
