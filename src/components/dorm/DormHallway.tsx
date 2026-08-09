@@ -1179,6 +1179,7 @@ function Panel({ accent, title, children }: { accent: string; title: string; chi
   );
 }
 
+
 export default function DormHallway() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const active = useMemo(() => INTERACTIVES.find((i) => i.key === activeKey) ?? null, [activeKey]);
