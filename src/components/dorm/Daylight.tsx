@@ -1,7 +1,6 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { PERF } from "@/lib/perf-flags";
 
 /** Master switch — set to false to freeze lighting at LATE AFTERNOON. */
 export const DAYLIGHT_DRIFT = true;
@@ -147,7 +146,7 @@ export function DaylightRig() {
   const t = useRef(2); // start at "afternoon"
 
   useFrame((_, delta) => {
-    if (DAYLIGHT_DRIFT && PERF.drift) {
+    if (DAYLIGHT_DRIFT) {
       t.current = (t.current + (delta * PRESETS.length) / CYCLE_SECONDS) % PRESETS.length;
     }
     const i = Math.floor(t.current);
