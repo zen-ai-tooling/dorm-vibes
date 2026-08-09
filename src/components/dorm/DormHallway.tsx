@@ -343,6 +343,9 @@ function RoomShell({ room }: { room: Room }) {
         <boxGeometry args={[1.4, 0.1, 0.7]} />
         <meshStandardMaterial color={COLORS.trim} />
       </mesh>
+
+      {/* data-derived mood atmosphere (tint fill + batched particles) */}
+      <RoomMood room={room} />
     </group>
   );
 }
