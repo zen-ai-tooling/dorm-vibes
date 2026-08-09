@@ -656,20 +656,8 @@ function World({
       <color attach="background" args={[COLORS.fog]} />
       <fog attach="fog" args={[COLORS.fog, 14, 34]} />
 
-      <ambientLight intensity={0.55} color="#FFE9CC" />
-      <hemisphereLight intensity={0.4} color="#FFF0D8" groundColor="#8A6440" />
-      <directionalLight
-        position={[6, 9, -4]}
-        intensity={1.5}
-        color="#FFD8A0"
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-14}
-        shadow-camera-right={14}
-        shadow-camera-top={14}
-        shadow-camera-bottom={-14}
-        shadow-camera-far={50}
-      />
+      <DaylightRig />
+
 
       <Structure />
       <HallwayDressing />
