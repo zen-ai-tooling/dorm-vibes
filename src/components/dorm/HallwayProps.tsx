@@ -104,7 +104,7 @@ export function VendingMachine() {
             castShadow
           >
             <boxGeometry args={[0.1, 0.2, 0.16]} />
-            <meshStandardMaterial color={["#E07A5F", "#F2CC8F", "#9B6BC7"][(r + c + 3) % 3]} />
+            <meshStandardMaterial color={["#E07A5F", "#F2CC8F", "#9B6BC7"][(r + c + 3) % 3]!} />
           </mesh>
         )),
       )}
@@ -178,7 +178,7 @@ export function LostAndFound() {
  */
 export function StringLights() {
   const ref = useRef<THREE.Group>(null);
-  const bulbs = [];
+  const bulbs: { z: number; x: number; y: number; i: number }[] = [];
   const step = 0.85;
   const count = Math.floor((HALL_END - HALL_START - 1) / step);
   for (let i = 0; i < count; i++) {
