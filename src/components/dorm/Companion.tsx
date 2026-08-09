@@ -202,7 +202,7 @@ export function Companion({
         <SoftBox position={[0, 0.7, 0]} args={[0.8, 0.07, 0.8]} radius={0.03} receiveShadow>
           <Std color={room.accent} roughness={0.85} />
         </SoftBox>
-        <group ref={body} position={[0, 0.72, 0]}>
+        <group ref={body} position={[0, 0.72, 0]} userData={{ dynamic: true }}>
           <Model accent={room.accent} />
         </group>
       </group>

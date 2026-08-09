@@ -1120,8 +1120,8 @@ function World({
         {ROOMS.map((room) => (
           <RoomShell key={room.id} room={room} />
         ))}
+        <HallwayDressing />
       </StaticMerge>
-      <HallwayDressing />
       <LockedDoor playerRef={player} />
       {ROOMS.map((room) => (
         <group key={room.id}>

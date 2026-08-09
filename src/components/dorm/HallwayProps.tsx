@@ -252,7 +252,7 @@ export function StringLights() {
           </mesh>
         );
       })}
-      <group ref={ref}>
+      <group ref={ref} userData={{ dynamic: true }}>
         {bulbs.map((b) => (
           <mesh key={b.i} position={[b.x, b.y, b.z]}>
             <sphereGeometry args={[0.045, 10, 8]} />

@@ -90,7 +90,7 @@ export function Speaker({
         </SoftBox>
 
         {/* platter + record */}
-        <group ref={platter} position={[-0.1, 0.9, 0]}>
+        <group ref={platter} position={[-0.1, 0.9, 0]} userData={{ dynamic: true }}>
           <mesh rotation={[0, 0, 0]}>
             <cylinderGeometry args={[0.26, 0.26, 0.035, 20]} />
             <Std color="#1D1815" roughness={0.6} />
@@ -111,7 +111,7 @@ export function Speaker({
         </group>
 
         {/* tonearm */}
-        <group ref={arm} position={[0.3, 0.92, -0.2]}>
+        <group ref={arm} position={[0.3, 0.92, -0.2]} userData={{ dynamic: true }}>
           <mesh>
             <cylinderGeometry args={[0.045, 0.05, 0.06, 10]} />
             <Std color="#C9B48A" roughness={0.5} />
