@@ -804,16 +804,17 @@ function World({
       const t = cameraClearance(player.current, ideal);
       const dist = CAM_DIST * t;
       // damp the boom length so wall pull-ins ease instead of popping
-      camDist.current = THREE.MathUtils.damp(camDist.current, dist, 9, delta);
+      camDist.current = THREE.MathUtils.damp(camDist.current, dist, 6, delta);
       // clamp: never let the boom lag further than a small margin behind target
       camDist.current = THREE.MathUtils.clamp(camDist.current, dist - 0.5, CAM_DIST);
 
       const desired = new THREE.Vector3(
         player.current.x - fwd.x * camDist.current,
-        1.2 + (CAM_HEIGHT - 1.2) * (camDist.current / CAM_DIST),
+        1.5 + (CAM_HEIGHT - 1.5) * (camDist.current / CAM_DIST),
         player.current.y - fwd.y * camDist.current,
       );
-      cam.current.position.lerp(desired, 1 - Math.pow(0.0008, delta));
+      // relaxed, floaty follow rather than a snappy chase
+      cam.current.position.lerp(desired, 1 - Math.pow(0.06, delta));
       // hard clamp against overshoot/drift on fast direction changes
       const planar = new THREE.Vector2(
         cam.current.position.x - player.current.x,
