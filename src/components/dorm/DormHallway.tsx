@@ -19,6 +19,8 @@ import {
 } from "@/lib/dorm-data";
 import { HallwayDressing } from "./HallwayProps";
 import { DormAudio } from "@/lib/dorm-audio";
+import { DaylightRig, DoorLight } from "./Daylight";
+
 
 type Box = { cx: number; cz: number; sx: number; sz: number };
 
@@ -368,13 +370,8 @@ function DoorFrame({ room }: { room: Room }) {
         <boxGeometry args={[0.16, 0.22, 0.5]} />
         <meshStandardMaterial color="#FFE6B0" emissive="#FFC773" emissiveIntensity={1.2} />
       </mesh>
-      <pointLight
-        position={[sign * (HALF - 0.4), 2.4, room.z]}
-        color="#FFCE8A"
-        intensity={7}
-        distance={9}
-        decay={2}
-      />
+      <DoorLight position={[sign * (HALF - 0.4), 2.4, room.z]} />
+
       {/* name plaque */}
       <Html
         position={[sign * (HALF - 0.05), 2.05, room.z]}
@@ -659,20 +656,8 @@ function World({
       <color attach="background" args={[COLORS.fog]} />
       <fog attach="fog" args={[COLORS.fog, 14, 34]} />
 
-      <ambientLight intensity={0.55} color="#FFE9CC" />
-      <hemisphereLight intensity={0.4} color="#FFF0D8" groundColor="#8A6440" />
-      <directionalLight
-        position={[6, 9, -4]}
-        intensity={1.5}
-        color="#FFD8A0"
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-14}
-        shadow-camera-right={14}
-        shadow-camera-top={14}
-        shadow-camera-bottom={-14}
-        shadow-camera-far={50}
-      />
+      <DaylightRig />
+
 
       <Structure />
       <HallwayDressing />
