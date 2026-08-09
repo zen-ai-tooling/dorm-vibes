@@ -418,11 +418,13 @@ function Structure() {
                   wall and fought with the far face */}
               <meshStandardMaterial color={COLORS.wall} side={THREE.DoubleSide} />
             </mesh>
-            {/* cap: closes the open-looking top edge of the run */}
-            <mesh position={[p.cx, p.cy + p.sy / 2 + 0.03, p.cz]} receiveShadow>
-              <boxGeometry args={[p.sx + 0.08, 0.08, p.sz + 0.08]} />
-              <meshStandardMaterial color={COLORS.wallOuter} roughness={0.95} />
-            </mesh>
+            {/* cap: closes the open-looking top edge of full-height runs */}
+            {p.cy + p.sy / 2 > HALL_H - 0.05 && (
+              <mesh position={[p.cx, HALL_H + 0.04, p.cz]} receiveShadow>
+                <boxGeometry args={[p.sx + 0.1, 0.09, p.sz + 0.1]} />
+                <meshStandardMaterial color={COLORS.wallOuter} roughness={0.95} />
+              </mesh>
+            )}
           </group>
         )),
       )}
