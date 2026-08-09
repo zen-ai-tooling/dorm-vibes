@@ -62,13 +62,16 @@ function buildWalls(): Box[] {
     walls.push({ cx: outerX, cz: room.z, sx: WALL_T, sz: ROOM_SIZE + WALL_T * 2 });
     const cx = roomCenterX(room.side);
     for (const dz of [-1, 1]) {
+      // side walls run the full depth so they interpenetrate (rather than
+      // butt face-to-face against) the hallway wall and the outer room wall
       walls.push({
         cx,
         cz: room.z + dz * (ROOM_SIZE / 2 + WALL_T / 2),
-        sx: ROOM_SIZE,
+        sx: ROOM_SIZE + WALL_T * 2,
         sz: WALL_T,
       });
     }
+
   }
   return walls;
 }
