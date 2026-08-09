@@ -902,8 +902,6 @@ function World({
 
     // ---- 3. camera placement: diorama in the hallway, intimate inside a room
     {
-      // same wall-plane/room-bounds signal the proximity system rides on
-      const wantRoom = roomContaining(player.current.x, player.current.y) ? 1 : 0;
       // short, deliberate lean-in/out rather than an instant cut
       const step = delta / CAM_BLEND_SECONDS;
       roomBlend.current = THREE.MathUtils.clamp(
@@ -914,52 +912,44 @@ function World({
       const b = roomBlend.current;
       const s = b * b * (3 - 2 * b); // smoothstep the blend curve
 
-      let targetDist = THREE.MathUtils.lerp(CAM_DIST, ROOM_CAM_DIST, s);
-      const targetHeight = THREE.MathUtils.lerp(CAM_HEIGHT, ROOM_CAM_HEIGHT, s);
+      if (curRoom) roomAnchor.current = curRoom;
+      const anchorRoom = roomAnchor.current;
 
-      // obstruction: at the lower in-room height the boom can hit walls, so
-      // pull it in until the line back to the character is clear
-      if (s > 0.05) {
-        const from = new THREE.Vector2(player.current.x, player.current.y);
-        for (let i = 0; i < 8; i++) {
-          const to = new THREE.Vector2(
-            player.current.x - fwd.x * targetDist,
-            player.current.y - fwd.y * targetDist,
-          );
-          // only enforce clearance proportionally to how "in-room" we are
-          if (segmentClear(from, to, 0.45 * s)) break;
-          targetDist -= 0.35;
-          if (targetDist < 1.9) {
-            targetDist = 1.9;
-            break;
-          }
-        }
+      const targetDist = THREE.MathUtils.lerp(CAM_DIST, ROOM_CAM_DIST, s);
+      const targetHeight = THREE.MathUtils.lerp(CAM_HEIGHT, ROOM_CAM_HEIGHT, s);
+      camDist.current = THREE.MathUtils.damp(camDist.current, targetDist, 12, delta);
+
+      // The room rig frames the interior, not the character's back: the focus
+      // point slides toward the room centre so furniture, companion and board
+      // all stay in the shot with the character reading small in frame.
+      const focus = new THREE.Vector2(player.current.x, player.current.y);
+      if (anchorRoom && s > 0.001) {
+        const sign = sideSign(anchorRoom.side);
+        const cx = sign * (HALF + WALL_T + ROOM_SIZE / 2);
+        focus.x = THREE.MathUtils.lerp(focus.x, cx, s * 0.75);
+        focus.y = THREE.MathUtils.lerp(focus.y, anchorRoom.z, s * 0.75);
       }
 
-      camDist.current = THREE.MathUtils.damp(camDist.current, targetDist, 6, delta);
-
       const desired = new THREE.Vector3(
-        player.current.x - fwd.x * camDist.current,
+        focus.x - fwd.x * camDist.current,
         targetHeight,
-        player.current.y - fwd.y * camDist.current,
+        focus.y - fwd.y * camDist.current,
       );
-      // relaxed, floaty follow — observational, not a chase cam (a touch
-      // tighter inside a room so the closer framing stays readable)
-      const follow = THREE.MathUtils.lerp(0.06, 0.02, s);
+      // relaxed, floaty follow in the hallway; snappy once committed to a room
+      const follow = THREE.MathUtils.lerp(0.06, 0.0004, s);
       cam.current.position.lerp(desired, 1 - Math.pow(follow, delta));
-      // keep the character comfortably framed even during heavy lag
+      // keep the frame anchored even during heavy lag
       const maxPlanar = camDist.current * 1.35;
       const planar = new THREE.Vector2(
-        cam.current.position.x - player.current.x,
-        cam.current.position.z - player.current.y,
+        cam.current.position.x - focus.x,
+        cam.current.position.z - focus.y,
       );
       if (planar.length() > maxPlanar) {
         planar.setLength(maxPlanar);
-        cam.current.position.x = player.current.x + planar.x;
-        cam.current.position.z = player.current.y + planar.y;
+        cam.current.position.x = focus.x + planar.x;
+        cam.current.position.z = focus.y + planar.y;
       }
-      // look target depends only on the character's position
-      lookAt.current.set(player.current.x, THREE.MathUtils.lerp(1.15, 1.35, s), player.current.y);
+      lookAt.current.set(focus.x, THREE.MathUtils.lerp(1.15, 1.45, s), focus.y);
       cam.current.lookAt(lookAt.current);
     }
 
