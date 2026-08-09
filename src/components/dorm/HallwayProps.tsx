@@ -252,35 +252,36 @@ export function StringLights() {
           </mesh>
         );
       })}
-      <group ref={ref} userData={{ dynamic: true }}>
-        {bulbs.map((b) => (
-          <mesh key={b.i} position={[b.x, b.y, b.z]}>
-            <sphereGeometry args={[0.045, 10, 8]} />
-            <meshStandardMaterial
-              color="#FFF3D6"
-              emissive="#FFC169"
-              emissiveIntensity={1.0}
-              roughness={0.5}
-              toneMapped={false}
-            />
-          </mesh>
-        ))}
-      </group>
-      {/* tight halo shell — barely larger than the bulb, just enough to soften
-          its edge; never large enough to occlude the hallway or character */}
-      {bulbs.map((b) => (
-        <mesh key={`h${b.i}`} position={[b.x, b.y, b.z]} renderOrder={-1}>
-          <sphereGeometry args={[0.062, 8, 6]} />
-          <Basic
-            color="#FFCE95"
-            transparent
-            opacity={0.12}
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-            toneMapped={false}
-          />
-        </mesh>
-      ))}
+      {/* bulbs + their halo shells are two instanced draws instead of ~60
+          individual meshes; the twinkle rides on per-instance colour so each
+          bulb keeps its own phase */}
+      <instancedMesh
+        ref={ref}
+        args={[undefined, undefined, Math.max(1, bulbs.length)]}
+        frustumCulled={false}
+        userData={{ dynamic: true }}
+      >
+        <sphereGeometry args={[0.045, 10, 8]} />
+        <meshBasicMaterial color="#FFF3D6" toneMapped={false} />
+      </instancedMesh>
+      <instancedMesh
+        args={[undefined, undefined, Math.max(1, bulbs.length)]}
+        frustumCulled={false}
+        renderOrder={-1}
+        ref={halo}
+        userData={{ dynamic: true }}
+      >
+        <sphereGeometry args={[0.062, 8, 6]} />
+        <meshBasicMaterial
+          color="#FFCE95"
+          transparent
+          opacity={0.12}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+        />
+      </instancedMesh>
+
 
       {/* a few sparse, very soft pools so the strand reads as light-emitting
           without competing with the door lamps */}
