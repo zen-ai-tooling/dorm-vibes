@@ -100,8 +100,10 @@ export function wallPanels(w: {
 /** Frame + sky panel + floor light patch for one window. */
 function HallWindow({ spec }: { spec: WindowSpec }) {
   const sky = useRef<THREE.MeshBasicMaterial>(null);
+  const glass = useRef<THREE.MeshPhysicalMaterial>(null);
   const shaft = useRef<THREE.MeshBasicMaterial>(null);
   const glow = useRef<THREE.PointLight>(null);
+
 
   useFrame(() => {
     if (sky.current) {
