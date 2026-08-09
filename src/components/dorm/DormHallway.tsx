@@ -662,7 +662,6 @@ function World({
     const dest = new THREE.Vector2(x, z);
     resolveCollisions(dest, PLAYER_R * 1.02);
     const route = findPath(player.current, dest);
-    console.log("[goTo]", x.toFixed(2), z.toFixed(2), "->", dest.toArray(), "route", route.length);
     if (!route.length) return;
     path.current = route;
     marker.current = { x: dest.x, z: dest.y, born: performance.now() };
