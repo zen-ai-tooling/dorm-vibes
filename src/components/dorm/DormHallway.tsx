@@ -759,6 +759,9 @@ function World({
   const camDist = useRef(CAM_DIST);
   /** 0 = hallway diorama framing, 1 = intimate in-room framing */
   const roomBlend = useRef(0);
+  /** last room the character was inside, so the blend-out keeps its framing */
+  const roomAnchor = useRef<Room | null>(null);
+
 
   // --- click/tap-to-move state (additive: WASD input cancels it instantly)
   const path = useRef<THREE.Vector2[]>([]);
