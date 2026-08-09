@@ -958,7 +958,7 @@ export default function DormHallway() {
 
       <div className="pointer-events-none absolute left-6 top-6 select-none">
         <h1 className="dorm-title">Dorm Hallway</h1>
-        <p className="dorm-sub">WASD to walk · step up to a speaker or board</p>
+        <p className="dorm-sub">Click anywhere to walk · WASD also works</p>
       </div>
 
       {active && active.kind === "speaker" && (
