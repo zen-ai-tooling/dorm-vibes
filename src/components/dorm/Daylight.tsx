@@ -17,6 +17,12 @@ type Preset = {
   ambient: number;
   hemi: number;
   door: number;
+  /** sky panel seen through the hallway windows */
+  sky: string;
+  skyEmissive: number;
+  /** warm patch of light the window throws onto the floor */
+  shaft: string;
+  shaftOpacity: number;
 };
 
 const PRESETS: Preset[] = [
@@ -28,6 +34,10 @@ const PRESETS: Preset[] = [
     ambient: 0.52,
     hemi: 0.38,
     door: 0.75,
+    sky: "#FFE0B2",
+    skyEmissive: 0.7,
+    shaft: "#FFD9A0",
+    shaftOpacity: 0.28,
   },
   {
     key: "midday",
@@ -37,6 +47,10 @@ const PRESETS: Preset[] = [
     ambient: 0.68,
     hemi: 0.5,
     door: 0.5,
+    sky: "#FFF6DE",
+    skyEmissive: 1.15,
+    shaft: "#FFF0C8",
+    shaftOpacity: 0.42,
   },
   {
     key: "afternoon",
@@ -46,6 +60,10 @@ const PRESETS: Preset[] = [
     ambient: 0.55,
     hemi: 0.4,
     door: 0.9,
+    sky: "#F5A860",
+    skyEmissive: 0.95,
+    shaft: "#F7B067",
+    shaftOpacity: 0.5,
   },
   {
     key: "evening",
@@ -55,11 +73,27 @@ const PRESETS: Preset[] = [
     ambient: 0.36,
     hemi: 0.26,
     door: 1.35,
+    sky: "#B8603C",
+    skyEmissive: 0.45,
+    shaft: "#C56B42",
+    shaftOpacity: 0.22,
   },
 ];
 
 /** Shared per-frame multiplier for the warm door lights. */
 export const doorLightState = { intensity: 0.9 };
+
+/**
+ * Shared, read-only-for-consumers snapshot of the current time-of-day look.
+ * Windows read from this so the sky can never drift out of sync with the
+ * lights — there is exactly one timer, and it lives in <DaylightRig />.
+ */
+export const daylightState = {
+  skyColor: new THREE.Color("#F5A860"),
+  skyEmissive: 0.95,
+  shaftColor: new THREE.Color("#F7B067"),
+  shaftOpacity: 0.5,
+};
 
 const doorLights = new Set<THREE.PointLight>();
 
@@ -133,6 +167,15 @@ export function DaylightRig() {
     }
     if (ambient.current) ambient.current.intensity = THREE.MathUtils.lerp(a.ambient, b.ambient, s);
     if (hemi.current) hemi.current.intensity = THREE.MathUtils.lerp(a.hemi, b.hemi, s);
+
+    cA.set(a.sky);
+    cB.set(b.sky);
+    daylightState.skyColor.copy(cA).lerp(cB, s);
+    daylightState.skyEmissive = THREE.MathUtils.lerp(a.skyEmissive, b.skyEmissive, s);
+    cA.set(a.shaft);
+    cB.set(b.shaft);
+    daylightState.shaftColor.copy(cA).lerp(cB, s);
+    daylightState.shaftOpacity = THREE.MathUtils.lerp(a.shaftOpacity, b.shaftOpacity, s);
 
     doorLightState.intensity = THREE.MathUtils.lerp(a.door, b.door, s);
     for (const light of doorLights) {
