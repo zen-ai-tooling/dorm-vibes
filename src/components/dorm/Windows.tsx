@@ -120,7 +120,9 @@ function HallWindow({ spec }: { spec: WindowSpec }) {
   });
 
   const sign = sideSign(spec.side);
-  const x = sign * WALL_CX;
+  // frame sits on the hallway-side face of the wall so it does not occlude the
+  // sky panel when the window is viewed at a grazing angle down the hallway
+  const x = sign * (HALF + 0.07);
   const cy = (WIN_SILL + WIN_TOP) / 2;
   const h = WIN_TOP - WIN_SILL;
 
@@ -129,28 +131,28 @@ function HallWindow({ spec }: { spec: WindowSpec }) {
       {/* sill + head + jambs, sunk slightly into the wall run so no face is
           coplanar with the wall surface */}
       <mesh position={[x, WIN_SILL + 0.03, spec.z]} castShadow>
-        <boxGeometry args={[WALL_T + 0.14, 0.12, WIN_W + 0.2]} />
+        <boxGeometry args={[0.18, 0.12, WIN_W + 0.2]} />
         <meshStandardMaterial color={COLORS.trim} />
       </mesh>
       <mesh position={[x, WIN_TOP - 0.03, spec.z]}>
-        <boxGeometry args={[WALL_T + 0.1, 0.1, WIN_W + 0.2]} />
+        <boxGeometry args={[0.16, 0.1, WIN_W + 0.2]} />
         <meshStandardMaterial color={COLORS.trim} />
       </mesh>
       {[-1, 1].map((dz) => (
         <mesh key={dz} position={[x, cy, spec.z + dz * (WIN_W / 2 - 0.03)]}>
-          <boxGeometry args={[WALL_T + 0.1, h, 0.1]} />
+          <boxGeometry args={[0.16, h, 0.1]} />
           <meshStandardMaterial color={COLORS.trim} />
         </mesh>
       ))}
       {/* muntin */}
       <mesh position={[x, cy, spec.z]}>
-        <boxGeometry args={[WALL_T + 0.04, h, 0.07]} />
+        <boxGeometry args={[0.1, h, 0.07]} />
         <meshStandardMaterial color={COLORS.trim} />
       </mesh>
 
       {/* sky panel just outside the opening */}
-      <mesh position={[sign * (HALF + WALL_T + 1.2), cy + 0.1, spec.z]} rotation={[0, sign * -Math.PI / 2, 0]}>
-        <planeGeometry args={[WIN_W * 2.6, h * 2.4]} />
+      <mesh position={[sign * (HALF + WALL_T + 0.4), cy + 0.05, spec.z]} rotation={[0, sign * -Math.PI / 2, 0]}>
+        <planeGeometry args={[WIN_W * 3.2, h * 3.2]} />
         <meshStandardMaterial ref={sky} color="#F5A860" emissive="#F5A860" emissiveIntensity={1} toneMapped={false} side={THREE.DoubleSide} />
       </mesh>
 
