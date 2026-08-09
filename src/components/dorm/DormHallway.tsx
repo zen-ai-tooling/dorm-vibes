@@ -427,7 +427,7 @@ function Character({
         </group>
       ))}
       {/* smile */}
-      <mesh position={[0, 1.455, 0.29]} rotation={[Math.PI / 2, 0, 0]}>
+      <mesh position={[0, 1.455, 0.292]} rotation={[0, 0, Math.PI]}>
         <torusGeometry args={[0.05, 0.012, 6, 12, Math.PI]} />
         <meshStandardMaterial color="#5B2733" roughness={0.8} />
       </mesh>
