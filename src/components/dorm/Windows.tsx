@@ -150,11 +150,28 @@ function HallWindow({ spec }: { spec: WindowSpec }) {
         <meshStandardMaterial color={COLORS.trim} />
       </mesh>
 
+      {/* glass pane — cool, light and translucent so the sky reads through */}
+      <mesh position={[sign * (HALF + WALL_T / 2), cy, spec.z]} rotation={[0, sign * -Math.PI / 2, 0]}>
+        <planeGeometry args={[WIN_W - 0.06, h - 0.06]} />
+        <meshPhysicalMaterial
+          ref={glass}
+          color="#D7ECF5"
+          transparent
+          opacity={0.22}
+          roughness={0.08}
+          metalness={0}
+          transmission={0.6}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+        />
+      </mesh>
+
       {/* sky panel just outside the opening */}
       <mesh position={[sign * (HALF + WALL_T + 0.06), cy + 0.05, spec.z]} rotation={[0, sign * -Math.PI / 2, 0]}>
         <planeGeometry args={[WIN_W * 3.2, h * 3.2]} />
         <meshBasicMaterial ref={sky} color="#F5A860" toneMapped={false} side={THREE.DoubleSide} fog={false} />
       </mesh>
+
 
       {/* warm patch of daylight on the hallway floor */}
       <mesh
